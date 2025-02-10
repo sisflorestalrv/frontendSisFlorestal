@@ -1,0 +1,147 @@
+/* Estilo para a sobreposição do modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* Container do modal */
+  .modal-container {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 20px;
+    width: 100%; /* Ocupa toda a largura */
+    max-height: 90%; /* Limita a altura */
+    margin: 0 20px; /* Margem lateral para evitar que grude nas bordas */
+    overflow-y: auto; /* Adiciona rolagem vertical se necessário */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  /* Cabeçalho do modal */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.5rem;
+    color: #333;
+  }
+  
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #aaa;
+    cursor: pointer;
+  }
+  
+  .btn-close:hover {
+    color: #333;
+  }
+  
+  /* Botões */
+  .form-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .btn-save {
+    background-color: #28a745;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .btn-save:hover {
+    background-color: #218838;
+  }
+  
+  .btn-cancel {
+    background-color: #dc3545;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .btn-cancel:hover {
+    background-color: #c82333;
+  }
+
+  /* Estilos exclusivos para o campo "Tipo de Despesa" */
+.modal-form .tipo-despesa-field select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  font-size: 1rem;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+
+.modal-form .tipo-despesa-field select:focus {
+  border-color: #28a745;
+  outline: none;
+  box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); /* Verde suave ao focar */
+}
+
+/* Estilos exclusivos para o campo "Descrição" */
+.modal-form .descricao-field textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+
+.modal-form .descricao-field textarea:focus {
+  border-color: #28a745;
+  outline: none;
+  box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); /* Verde suave ao focar */
+}
+
+/* Adicionando efeito de hover para os campos */
+.modal-form .tipo-despesa-field select:hover,
+.modal-form .descricao-field textarea:hover {
+  border-color: #007bff; /* Azul suave ao passar o mouse */
+}
+
+  
+  /* Animação */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  

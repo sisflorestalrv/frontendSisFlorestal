@@ -1,0 +1,72 @@
+/* Estilo para a página de despesas */
+.expenses-container {
+    padding: 20px;
+    background-color: #f4f4f9;
+  }
+  
+  /* Título da página */
+  .expenses-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2e8b57;  /* Verde */
+  }
+  
+  /* Barra de pesquisa */
+  .expenses-search-input {
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #28a745; /* Verde mais claro */
+  }
+  
+  .expenses-search-icon {
+    background-color: #28a745;
+    color: white;
+    padding: 12px;
+    border-radius: 5px;
+  }
+  
+  /* Tabela */
+  .expenses-table {
+    width: 100%;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+  
+  .expenses-table th, .expenses-table td {
+    padding: 12px;
+    text-align: center;
+  }
+  
+  .expenses-table thead {
+    background-color: #34c759; /* Verde */
+    color: white;
+    font-weight: bold;
+  }
+  
+  .expenses-table tbody tr:nth-child(even) {
+    background-color: #f0f0f0;
+  }
+  
+  /* Botão de gerar PDF */
+  .expenses-generate-btn {
+    background-color: #34c759; /* Verde */
+    color: white;
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .expenses-generate-btn:hover {
+    background-color: #28a745;
+  }
+  
+  .expenses-generate-btn:active {
+    background-color: #218838;
+  }
+  

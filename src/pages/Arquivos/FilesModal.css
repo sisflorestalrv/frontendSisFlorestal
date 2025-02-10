@@ -1,0 +1,135 @@
+/* Estilos gerais do modal */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .custom-modal {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 600px;
+    max-width: 90%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  /* Seção de upload de arquivos */
+  .upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .title-input, .file-input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+  }
+  
+  .file-input {
+    cursor: pointer;
+  }
+  
+  .upload-section button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .upload-section button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Lista de arquivos */
+  .file-list {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .file-info span {
+    font-size: 16px;
+    color: #333;
+  }
+  
+  .action-buttons button {
+    padding: 6px 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .action-buttons button:hover {
+    background-color: #c82333;
+  }
+  
+  .action-buttons button:focus {
+    outline: none;
+  }
+  
+  /* Estilo do botão de fechar */
+  .modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .modal-actions button {
+    padding: 12px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .modal-actions button:hover {
+    background-color: #c82333;
+  }
+  
+  .modal-actions button:focus {
+    outline: none;
+  }
+  

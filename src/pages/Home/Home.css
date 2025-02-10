@@ -1,0 +1,74 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Ajusta para ficar mais para cima */
+    height: 90vh;
+    background-color: #f8f9fa;
+    padding: 30px 20px; /* Aumenta o padding para um pequeno afastamento das bordas */
+  }
+  
+  .home-logo-container {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .home-logo {
+    width: 180px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  .home-slogan {
+    font-size: 1.1rem;
+    color: #333;
+    margin-top: 10px;
+    font-style: italic;
+    font-weight: lighter;
+  }
+  
+  .home-subtitle {
+    font-size: 1.3rem;
+    color: #555;
+    font-weight: normal;
+    margin-top: 10px;
+    font-style: italic;
+  }
+  
+  .home-btn-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .btn-home {
+    background-color: #34c759;
+    color: white;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .btn-home:hover {
+    background-color: #28a745;
+  }
+  
+  .btn-home:active {
+    background-color: #218838;
+  }
+  
+  .home-icon {
+    font-size: 1.3rem;
+  }
+  

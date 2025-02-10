@@ -1,0 +1,96 @@
+/* Estilos para o Container principal */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Ajusta para mais para cima */
+    height: 100vh;
+    background-color: #f0f4f8; /* Fundo suave */
+    font-family: 'Poppins', sans-serif;
+    padding-top: 40px; /* Ajuste para o login subir */
+  }
+  
+  /* Caixa de Login */
+  .login-box {
+    background-color: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px; /* Largura máxima da caixa de login */
+    text-align: center;
+  }
+  
+  /* Logo do Projeto */
+  .login-logo {
+    width: 120px;
+    height: auto;
+    margin-bottom: 20px;
+  }
+  
+  /* Título */
+  .login-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #2c6e49; /* Verde escuro */
+    margin-bottom: 30px;
+  }
+  
+  /* Grupo de entradas de login */
+  .login-input-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  /* Rótulo do campo */
+  .login-label {
+    font-size: 16px;
+    color: #34495e;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  
+  /* Estilo dos campos de entrada */
+  .login-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    transition: border 0.3s ease;
+  }
+  
+  /* Foco no campo de entrada */
+  .login-input:focus {
+    border-color: #2c6e49; /* Verde claro no foco */
+    outline: none;
+  }
+  
+  /* Botão de login */
+  .login-button {
+    width: 100%;
+    padding: 14px;
+    background-color: #2c6e49; /* Verde */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Hover do botão de login */
+  .login-button:hover {
+    background-color: #227a3c; /* Verde mais escuro no hover */
+  }
+  
+  /* Mensagem de erro */
+  .login-error {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 15px;
+  }
+  
