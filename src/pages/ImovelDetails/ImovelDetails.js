@@ -12,6 +12,7 @@ import RegisterDespesaPopup from "../ExpensePages/RegisterDespesaPopup";
 import NotasModal from "../Notas/NotasModal";
 import MapModal from "../MapaModal/MapModal";
 import FileModal from "../Arquivos/FilesModal"; // Importe o componente correto
+import EditImovelModal from "./EditImovelModal"; // Importe o modal de edição
 import "../modal.css";
 
 
@@ -33,6 +34,7 @@ const ImovelDetails = () => {
   const [contractExpirationAlert, setContractExpirationAlert] = useState("");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isFilesModalOpen, setIsFilesModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
 
 
@@ -129,6 +131,16 @@ const handleCloseFilesModal = () => setIsFilesModalOpen(false);
 
   const handleOpenNotasModal = () => setIsNotasModalOpen(true);
   const handleCloseNotasModal = () => setIsNotasModalOpen(false);
+
+  const handleOpenEditModal = () => setIsEditModalOpen(true);
+  const handleCloseEditModal = () => setIsEditModalOpen(false);
+
+
+  const handleSaveImovel = () => {
+    // Lógica para salvar as alterações no imóvel
+    console.log("Salvar alterações no imóvel");
+  };
+
 
 
   const handleGenerateReport = () => {
@@ -348,8 +360,17 @@ const handleCloseFilesModal = () => setIsFilesModalOpen(false);
 <button className="custom-button" onClick={handleOpenFilesModal}>
   Arquivos
 </button>
-  <button className="custom-button">Editar</button>
+  <button className="custom-button" onClick={handleOpenEditModal}>Editar</button>
 </div>
+
+
+{/* Modal de Edição */}
+<EditImovelModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        imovel={imovel}
+        onSave={handleSaveImovel}
+      />
 
 <FileModal
   isOpen={isFilesModalOpen}

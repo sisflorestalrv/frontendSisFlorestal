@@ -1,0 +1,143 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Fundo escurecido */
+    display: flex;
+    justify-content: center; /* Centraliza o conteúdo horizontalmente */
+    align-items: center; /* Centraliza o conteúdo verticalmente */
+    z-index: 9999; /* Coloca o modal sobre outros conteúdos */
+}
+
+.custom-modal {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px; /* Largura máxima do modal */
+    max-height: 80vh; /* Altura máxima do modal (80% da altura da tela) */
+    overflow-y: auto; /* Habilita a rolagem vertical quando o conteúdo exceder a altura */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Sombra para dar destaque */
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-out; /* Animação para o modal aparecer */
+}
+
+.modal-title {
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    text-align: center; /* Centraliza o título */
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinha os botões na parte inferior direita */
+    margin-top: 20px;
+}
+
+.modal-actions button {
+    margin-left: 10px; /* Adiciona espaço entre os botões */
+}
+
+/* Botões estilos */
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-success:hover {
+    background-color: #218838; /* Cor do botão quando hover */
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background-color: #c82333; /* Cor do botão quando hover */
+}
+
+/* Estilização básica para os botões */
+.btn-secondary {
+    background-color: #28a745; /* Cor verde para o botão */
+    color: white;
+    padding: 10px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 1; /* Opacidade normal para o botão ativo */
+}
+
+.btn-secondary:hover {
+    background-color: #218838; /* Cor verde mais escuro no hover */
+}
+
+/* Estilo para o botão ativo (selecionado) */
+.btn-secondary.active {
+    background-color: #28a745; /* Verde normal */
+    font-size: 14px; /* Manter o tamanho normal */
+    opacity: 1; /* Opacidade normal para o botão ativo */
+}
+
+/* Estilo para os botões não ativos (não selecionados) */
+.btn-secondary:not(.active) {
+    opacity: 0.6; /* Opacidade reduzida para o botão não selecionado */
+}
+
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #000;
+}
+
+.close-button:hover {
+    color: #ff0000; /* Cor quando o botão de fechar é hover */
+}
+
+/* Adiciona animação ao modal */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
