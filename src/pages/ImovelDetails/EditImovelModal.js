@@ -8,9 +8,26 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
   const [codigoCCExists, setCodigoCCExists] = useState(false);
   const [popup, setPopup] = useState({ message: "", type: "" });
 
+  // Função para formatar a data no formato YYYY-MM-DD
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return ""; // Se não houver data, retorna vazio
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return ""; // Verifica se a data é válida
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     if (imovel) {
-      setFormData(imovel);
+      const formattedImovel = {
+        ...imovel,
+        data_plantio: formatDateForInput(imovel.data_plantio),
+        data_contrato: formatDateForInput(imovel.data_contrato),
+        vencimento_contrato: formatDateForInput(imovel.vencimento_contrato),
+      };
+      setFormData(formattedImovel);
       setIsArrendado(!!imovel.arrendatario);
     }
   }, [imovel]);
@@ -27,7 +44,9 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
 
   const checkCodigoCCExists = async (codigo_cc) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/verificarCodigoCC?codigo_cc=${codigo_cc}`);
+      const response = await fetch(
+        `http://localhost:5000/api/verificarCodigoCC?codigo_cc=${codigo_cc}`
+      );
       const data = await response.json();
       return data.exists;
     } catch (error) {
@@ -53,7 +72,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     // Validações
     if (
       formData.area_imovel <= 0 ||
@@ -65,7 +84,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
       setPopup({ message: "Os valores não podem ser negativos ou zero!", type: "error" });
       return;
     }
-
+  
     if (
       !isValidNumber(formData.area_imovel) ||
       !isValidNumber(formData.area_plantio) ||
@@ -75,16 +94,15 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
       setPopup({ message: "Os números devem estar no formato correto (ex: 100000.00).", type: "error" });
       return;
     }
-
-    // Formatar dados para enviar ao backend
+  
+    // Formatar datas antes de enviar (apenas a parte da data, sem tempo ou fuso horário)
     const formattedData = {
       ...formData,
-      arrendatario: isArrendado ? formData.arrendatario : null,
-      vencimento_contrato: isArrendado ? formData.vencimento_contrato : null,
-      data_contrato: isArrendado ? formData.data_contrato : null,
-      data_plantio: formData.data_plantio || imovel.data_plantio,
+      data_plantio: formData.data_plantio ? formData.data_plantio : null, // Já está no formato YYYY-MM-DD
+      data_contrato: isArrendado && formData.data_contrato ? formData.data_contrato : null, // Já está no formato YYYY-MM-DD
+      vencimento_contrato: isArrendado && formData.vencimento_contrato ? formData.vencimento_contrato : null, // Já está no formato YYYY-MM-DD
     };
-
+  
     try {
       const response = await fetch(`http://localhost:5000/api/imoveis/${imovel.id}`, {
         method: "PUT",
@@ -93,13 +111,15 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
         },
         body: JSON.stringify(formattedData),
       });
-
+  
       if (response.ok) {
         setPopup({ message: "Imóvel atualizado com sucesso!", type: "success" });
         onSave(); // Atualizar a lista de imóveis ou recarregar os dados
         setTimeout(() => onClose(), 1500); // Fechar o modal após 1,5 segundos
       } else {
-        setPopup({ message: "Erro ao atualizar o imóvel.", type: "error" });
+        const errorData = await response.json();
+        console.error("Erro ao atualizar o imóvel:", errorData);
+        setPopup({ message: errorData.error || "Erro ao atualizar o imóvel.", type: "error" });
       }
     } catch (error) {
       console.error("Erro ao atualizar o imóvel:", error);
@@ -110,33 +130,33 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="custom-modal">
+    <div className="customModalEdit-overlay">
+      <div className="customModalEdit-modal">
         {/* Botão de fechar no canto superior direito */}
-        <button className="close-button" onClick={onClose}>
+        <button className="customModalEdit-close-button" onClick={onClose}>
           &times;
         </button>
 
-        <h2 className="modal-title">Editar Imóvel</h2>
+        <h2 className="customModalEdit-title">Editar Imóvel</h2>
         <form onSubmit={handleSubmit}>
           <div className="text-center mb-4">
             <button
               type="button"
-              className={`btn btn-secondary mx-2 ${!isArrendado ? "active" : ""}`}
+              className={`customModalEdit-btn-secondary mx-2 ${!isArrendado ? "active" : ""}`}
               onClick={() => toggleTipoImovel("proprio")}
             >
               Próprio
             </button>
             <button
               type="button"
-              className={`btn btn-secondary mx-2 ${isArrendado ? "active" : ""}`}
+              className={`customModalEdit-btn-secondary mx-2 ${isArrendado ? "active" : ""}`}
               onClick={() => toggleTipoImovel("arrendado")}
             >
               Arrendado
             </button>
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="descricao">Descrição</label>
             <input
               type="text"
@@ -148,7 +168,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="codigo_cc">Código CC</label>
             <input
               type="text"
@@ -161,7 +181,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             {codigoCCExists && <div className="text-danger">Código CC já existe</div>}
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="numero_car">Número CAR</label>
             <input
               type="text"
@@ -173,7 +193,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="area_imovel">Área do Imóvel</label>
             <input
               type="number"
@@ -185,7 +205,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="area_plantio">Área de Plantio</label>
             <input
               type="number"
@@ -197,7 +217,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="especie">Espécie</label>
             <input
               type="text"
@@ -209,7 +229,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="origem">Origem</label>
             <input
               type="text"
@@ -221,7 +241,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="num_arvores_plantadas">Número de Árvores Plantadas</label>
             <input
               type="number"
@@ -233,7 +253,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="num_arvores_cortadas">Número de Árvores Cortadas</label>
             <input
               type="number"
@@ -245,7 +265,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="matricula">Matrícula</label>
             <input
               type="text"
@@ -257,7 +277,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="data_plantio">Data de Plantio</label>
             <input
               type="date"
@@ -270,7 +290,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
 
           {isArrendado && (
             <>
-              <div className="form-group">
+              <div className="customModalEdit-form-group">
                 <label htmlFor="vencimento_contrato">Vencimento do Contrato</label>
                 <input
                   type="date"
@@ -280,7 +300,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="form-group">
+              <div className="customModalEdit-form-group">
                 <label htmlFor="arrendatario">Arrendatário</label>
                 <input
                   type="text"
@@ -290,7 +310,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="form-group">
+              <div className="customModalEdit-form-group">
                 <label htmlFor="data_contrato">Data do Contrato</label>
                 <input
                   type="date"
@@ -303,7 +323,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             </>
           )}
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="numero_ccir">Número do CCIR</label>
             <input
               type="text"
@@ -315,7 +335,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="numero_itr">Número do ITR</label>
             <input
               type="text"
@@ -327,7 +347,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="proprietario">Proprietário</label>
             <input
               type="text"
@@ -339,7 +359,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="municipio">Município</label>
             <input
               type="text"
@@ -351,7 +371,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="customModalEdit-form-group">
             <label htmlFor="localidade">Localidade</label>
             <input
               type="text"
@@ -363,12 +383,11 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
             />
           </div>
 
-          
-          <div className="modal-actions">
-            <button type="submit" className="btn btn-success">
+          <div className="customModalEdit-actions">
+            <button type="submit" className="customModalEdit-btn-success">
               Salvar
             </button>
-            <button type="button" className="btn btn-danger" onClick={onClose}>
+            <button type="button" className="customModalEdit-btn-danger" onClick={onClose}>
               Cancelar
             </button>
           </div>

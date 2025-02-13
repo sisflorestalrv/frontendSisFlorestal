@@ -13,6 +13,7 @@ import NotasModal from "../Notas/NotasModal";
 import MapModal from "../MapaModal/MapModal";
 import FileModal from "../Arquivos/FilesModal"; // Importe o componente correto
 import EditImovelModal from "./EditImovelModal"; // Importe o modal de edição
+import InventoryModal from "../Inventario/InventoryModal"; // Ajuste o caminho conforme necessário
 import "../modal.css";
 
 
@@ -35,6 +36,7 @@ const ImovelDetails = () => {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isFilesModalOpen, setIsFilesModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
 
 
 
@@ -134,6 +136,9 @@ const handleCloseFilesModal = () => setIsFilesModalOpen(false);
 
   const handleOpenEditModal = () => setIsEditModalOpen(true);
   const handleCloseEditModal = () => setIsEditModalOpen(false);
+
+  const handleOpenInventoryModal = () => setIsInventoryModalOpen(true);
+const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
 
 
   const handleSaveImovel = () => {
@@ -360,9 +365,19 @@ const handleCloseFilesModal = () => setIsFilesModalOpen(false);
 <button className="custom-button" onClick={handleOpenFilesModal}>
   Arquivos
 </button>
+<button className="custom-button" onClick={handleOpenInventoryModal}>
+  Inventário
+</button>
+
   <button className="custom-button" onClick={handleOpenEditModal}>Editar</button>
 </div>
 
+
+<InventoryModal
+  isOpen={isInventoryModalOpen}
+  onClose={handleCloseInventoryModal}
+  imovelId={id}
+/>
 
 {/* Modal de Edição */}
 <EditImovelModal

@@ -1,4 +1,4 @@
-.modal-overlay {
+.customModalEdit-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -11,7 +11,7 @@
     z-index: 9999; /* Coloca o modal sobre outros conteúdos */
 }
 
-.custom-modal {
+.customModalEdit-modal {
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
@@ -25,41 +25,41 @@
     animation: fadeIn 0.3s ease-out; /* Animação para o modal aparecer */
 }
 
-.modal-title {
+.customModalEdit-title {
     font-size: 1.8em;
     margin-bottom: 20px;
     text-align: center; /* Centraliza o título */
 }
 
-.form-group {
+.customModalEdit-form-group {
     margin-bottom: 15px;
 }
 
-.form-group label {
+.customModalEdit-form-group label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
 
-.form-group input {
+.customModalEdit-form-group input {
     width: 100%;
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
 }
 
-.modal-actions {
+.customModalEdit-actions {
     display: flex;
     justify-content: flex-end; /* Alinha os botões na parte inferior direita */
     margin-top: 20px;
 }
 
-.modal-actions button {
+.customModalEdit-actions button {
     margin-left: 10px; /* Adiciona espaço entre os botões */
 }
 
 /* Botões estilos */
-.btn-success {
+.customModalEdit-btn-success {
     background-color: #28a745;
     color: white;
     padding: 10px 20px;
@@ -69,11 +69,11 @@
     cursor: pointer;
 }
 
-.btn-success:hover {
+.customModalEdit-btn-success:hover {
     background-color: #218838; /* Cor do botão quando hover */
 }
 
-.btn-danger {
+.customModalEdit-btn-danger {
     background-color: #dc3545;
     color: white;
     padding: 10px 20px;
@@ -83,12 +83,12 @@
     cursor: pointer;
 }
 
-.btn-danger:hover {
+.customModalEdit-btn-danger:hover {
     background-color: #c82333; /* Cor do botão quando hover */
 }
 
 /* Estilização básica para os botões */
-.btn-secondary {
+.customModalEdit-btn-secondary {
     background-color: #28a745; /* Cor verde para o botão */
     color: white;
     padding: 10px 20px;
@@ -100,24 +100,23 @@
     opacity: 1; /* Opacidade normal para o botão ativo */
 }
 
-.btn-secondary:hover {
+.customModalEdit-btn-secondary:hover {
     background-color: #218838; /* Cor verde mais escuro no hover */
 }
 
 /* Estilo para o botão ativo (selecionado) */
-.btn-secondary.active {
+.customModalEdit-btn-secondary.active {
     background-color: #28a745; /* Verde normal */
     font-size: 14px; /* Manter o tamanho normal */
     opacity: 1; /* Opacidade normal para o botão ativo */
 }
 
 /* Estilo para os botões não ativos (não selecionados) */
-.btn-secondary:not(.active) {
+.customModalEdit-btn-secondary:not(.active) {
     opacity: 0.6; /* Opacidade reduzida para o botão não selecionado */
 }
 
-
-.close-button {
+.customModalEdit-close-button {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -128,7 +127,7 @@
     color: #000;
 }
 
-.close-button:hover {
+.customModalEdit-close-button:hover {
     color: #ff0000; /* Cor quando o botão de fechar é hover */
 }
 

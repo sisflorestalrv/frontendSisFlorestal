@@ -1,0 +1,113 @@
+/* Overlay para cobrir a tela */
+.customModalInventory-overlay {
+  position: fixed; /* Fixo na tela */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: hidden; /* Impede o scroll da página */
+}
+
+/* Modal container */
+.customModalInventory {
+  background-color: #ffffff;
+  border-radius: 8px;
+  width: 90%; /* Largura do modal */
+  max-width: 1200px; /* Largura máxima */
+  max-height: 90vh; /* Altura máxima */
+  overflow-y: auto; /* Scroll interno do modal */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.4);
+  position: fixed; /* Fixo na tela */
+  top: 50%; /* Posiciona no centro vertical */
+  left: 50%; /* Posiciona no centro horizontal */
+  transform: translate(-50%, -50%); /* Centraliza exatamente no meio */
+  z-index: 1001;
+  padding: 20px; /* Espaçamento interno */
+}
+
+/* Cabeçalho do modal */
+.customModalInventory-title {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.customModalInventory-content {
+  flex: 1;
+  overflow-y: auto; /* Scroll interno do conteúdo */
+}
+
+/* Tabelas */
+.customModalInventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.customModalInventory-table th,
+.customModalInventory-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.customModalInventory-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+/* Botões */
+.customModalInventory-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.customModalInventory-btn-primary {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.customModalInventory-btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.customModalInventory-btn-success {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.customModalInventory-btn-success:hover {
+  background-color: #218838;
+}
+
+.customModalInventory-btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.customModalInventory-btn-danger:hover {
+  background-color: #c82333;
+}
+
+/* Mensagens */
+.customModalInventory-error {
+  color: #dc3545;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* Impede o scroll da página quando o modal está aberto */
+.customModalInventory-no-scroll {
+  overflow: hidden;
+}
