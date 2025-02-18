@@ -22,16 +22,18 @@
     const [reportFilters, setReportFilters] = useState({
       tipoImovel: 'todos', // Pode ser 'próprio' ou 'arrendado'
       atributos: {
-        descricao: true,
-        area_imovel: true,
-        area_plantio: true,
-        especie: true,
+        descricao: false,
+        area_imovel: false,
+        area_plantio: false,
+        especie: false,
         num_arvores_plantadas: false,
         num_arvores_cortadas: false,
         num_arvores_remanescentes: false,
         matricula: false,
         data_plantio: false,
         vencimento_contrato: false,
+        data_contrato: false,
+        proprietario: false,
         arrendatario: false,
         municipio: false,
         localidade: false,
@@ -52,6 +54,8 @@
       matricula: 'Matrícula',
       data_plantio: 'Data de Plantio',
       vencimento_contrato: 'Vencimento do Contrato',
+      data_contrato: 'Data do Contrato',
+      proprietario: 'Proprietário',
       arrendatario: 'Arrendatário',
       municipio: 'Município',
       localidade: 'Localidade',
@@ -158,72 +162,86 @@
     return 0; // Sem ordenação
   });
 
+  const formatarData = (data) => {
+    if (!data) return "Não disponível"; // Caso a data seja nula ou indefinida
+  
+    const date = new Date(data);
+    const dia = String(date.getDate()).padStart(2, '0');
+    const mes = String(date.getMonth() + 1).padStart(2, '0'); // Mês começa do 0
+    const ano = date.getFullYear();
+  
+    return `${dia}/${mes}/${ano}`;
+  };
+
     
 
   
   const gerarRelatorio = () => {
     const relatorioImoveis = filteredImoveis.map((imovel) => {
       const selectedAttributes = {};
-      for (const [key, value] of Object.entries(reportFilters.atributos)) {
-        if (value) {
-          switch (key) {
-            case 'descricao':
-              selectedAttributes['Descrição'] = imovel.descricao;
-              break;
-            case 'area_imovel':
-              selectedAttributes['Área do Imóvel (m²)'] = imovel.area_imovel;
-              break;
-            case 'area_plantio':
-              selectedAttributes['Área de Plantio (m²)'] = imovel.area_plantio;
-              break;
-            case 'especie':
-              selectedAttributes['Espécie'] = imovel.especie;
-              break;
-            case 'num_arvores_plantadas':
-              selectedAttributes['Número de Árvores Plantadas'] = imovel.num_arvores_plantadas;
-              break;
-            case 'num_arvores_cortadas':
-              selectedAttributes['Número de Árvores Cortadas'] = imovel.num_arvores_cortadas;
-              break;
-            case 'num_arvores_remanescentes':
-              selectedAttributes['Número de Árvores Remanescentes'] = imovel.num_arvores_remanescentes;
-              break;
-            case 'matricula':
-              selectedAttributes['Matrícula'] = imovel.matricula;
-              break;
-            case 'data_plantio':
-              selectedAttributes['Data de Plantio'] = imovel.data_plantio;
-              break;
-            case 'proprietario':
-              selectedAttributes['Proprietário'] = imovel.proprietario;
-              break;
-            case 'arrendatario':
-              selectedAttributes['Arrendatário'] = imovel.arrendatario;
-              break;
-            case 'vencimento_contrato':
-              selectedAttributes['Vencimento do Contrato'] = imovel.vencimento_contrato;
-              break;
-            case 'municipio':
-              selectedAttributes['Município'] = imovel.municipio;
-              break;
-            case 'localidade':
-              selectedAttributes['Localidade'] = imovel.localidade;
-              break;
-            case 'numero_car':
-              selectedAttributes['Número do CAR'] = imovel.numero_car;
-              break;
-            case 'codigo_cc':
-              selectedAttributes['Código CC'] = imovel.codigo_cc;
-              break;
-            case 'altura_desrama':
-              selectedAttributes['Altura da Desrama'] = imovel.altura_desrama;
-              break;
-            default:
-              selectedAttributes[key.replace('_', ' ')] = imovel[key];
-              break;
-          }
+    for (const [key, value] of Object.entries(reportFilters.atributos)) {
+      if (value) {
+        switch (key) {
+          case 'descricao':
+            selectedAttributes['Descrição'] = imovel.descricao;
+            break;
+          case 'area_imovel':
+            selectedAttributes['Área do Imóvel (m²)'] = imovel.area_imovel;
+            break;
+          case 'area_plantio':
+            selectedAttributes['Área de Plantio (m²)'] = imovel.area_plantio;
+            break;
+          case 'especie':
+            selectedAttributes['Espécie'] = imovel.especie;
+            break;
+          case 'num_arvores_plantadas':
+            selectedAttributes['Número de Árvores Plantadas'] = imovel.num_arvores_plantadas;
+            break;
+          case 'num_arvores_cortadas':
+            selectedAttributes['Número de Árvores Cortadas'] = imovel.num_arvores_cortadas;
+            break;
+          case 'num_arvores_remanescentes':
+            selectedAttributes['Número de Árvores Remanescentes'] = imovel.num_arvores_remanescentes;
+            break;
+          case 'matricula':
+            selectedAttributes['Matrícula'] = imovel.matricula;
+            break;
+          case 'data_plantio':
+            selectedAttributes['Data de Plantio'] = formatarData(imovel.data_plantio);
+            break;
+          case 'data_contrato':
+            selectedAttributes['Data do Contrato'] = formatarData(imovel.data_contrato);
+            break;
+          case 'proprietario':
+            selectedAttributes['Proprietário'] = imovel.proprietario;
+            break;
+          case 'arrendatario':
+            selectedAttributes['Arrendatário'] = imovel.arrendatario;
+            break;
+          case 'vencimento_contrato':
+            selectedAttributes['Vencimento do Contrato'] = formatarData(imovel.vencimento_contrato);
+            break;
+          case 'municipio':
+            selectedAttributes['Município'] = imovel.municipio;
+            break;
+          case 'localidade':
+            selectedAttributes['Localidade'] = imovel.localidade;
+            break;
+          case 'numero_car':
+            selectedAttributes['Número do CAR'] = imovel.numero_car;
+            break;
+          case 'codigo_cc':
+            selectedAttributes['Código CC'] = imovel.codigo_cc;
+            break;
+          case 'altura_desrama':
+            selectedAttributes['Altura da Desrama'] = imovel.altura_desrama;
+            break;
+          default:
+            selectedAttributes[key.replace('_', ' ')] = imovel[key];
+            break;
         }
       }
+    }
       return selectedAttributes;
     });
   
@@ -262,6 +280,8 @@
             return 'Matrícula';
           case 'data_plantio':
             return 'Data de Plantio';
+          case 'data_contrato':
+            return 'Data do Contrato';
           case 'proprietario':
             return 'Proprietário';
           case 'arrendatario':
@@ -304,6 +324,19 @@
     // Salvar o PDF
     doc.save('relatorio_imoveis.pdf');
   };
+
+  // Função para selecionar todos os atributos
+const selecionarTodosAtributos = () => {
+  const todosAtributos = Object.keys(reportFilters.atributos).reduce((acc, key) => {
+    acc[key] = true; // Marca todos os atributos como true
+    return acc;
+  }, {});
+
+  setReportFilters((prevReportFilters) => ({
+    ...prevReportFilters,
+    atributos: todosAtributos,
+  }));
+};
   
   
   
@@ -428,42 +461,49 @@
 
         {/* Caixa de filtros para gerar relatório */}
         {showReportFilters && (
-          <div className="mt-3 p-3 border rounded">
-            <h5>Filtros do Relatório</h5>
-            <form>
-              <div className="mb-2">
-                <label htmlFor="tipoImovel" className="form-label">Tipo de Imóvel:</label>
-                <select
-                  id="tipoImovel"
-                  name="tipoImovel"
-                  className="form-control"
-                  value={reportFilters.tipoImovel}
-                  onChange={handleReportFilterChange}
-                >
-                  <option value="todos">Todos</option>
-                  <option value="proprio">Próprio</option>
-                  <option value="arrendado">Arrendado</option>
-                </select>
-              </div>
+  <div className="mt-3 p-3 border rounded">
+    <h5>Filtros do Relatório</h5>
+    <form>
+      <div className="mb-2">
+        <label htmlFor="tipoImovel" className="form-label">Tipo de Imóvel:</label>
+        <select
+          id="tipoImovel"
+          name="tipoImovel"
+          className="form-control"
+          value={reportFilters.tipoImovel}
+          onChange={handleReportFilterChange}
+        >
+          <option value="todos">Todos</option>
+          <option value="proprio">Próprio</option>
+          <option value="arrendado">Arrendado</option>
+        </select>
+      </div>
 
-              {/* Atributos a incluir no relatório */}
-              <h6>Atributos para o Relatório:</h6>
-              {Object.keys(reportFilters.atributos).map((key) => (
-                <div className="form-check" key={key}>
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    name={key}
-                    checked={reportFilters.atributos[key]}
-                    onChange={handleReportAtributosChange}
-                  />
-                  <label className="form-check-label">{getFriendlyName(key)}</label>
+      {/* Botão para selecionar todos os atributos */}
+      <button
+        type="button"
+        className="btn btn-secondary mb-3"
+        onClick={selecionarTodosAtributos}
+      >
+        Selecionar Todos
+      </button>
 
+      {/* Atributos a incluir no relatório */}
+      <h6>Atributos para o Relatório:</h6>
+      {Object.keys(reportFilters.atributos).map((key) => (
+        <div className="form-check" key={key}>
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name={key}
+            checked={reportFilters.atributos[key]}
+            onChange={handleReportAtributosChange}
+          />
+          <label className="form-check-label">{getFriendlyName(key)}</label>
+        </div>
+      ))}
 
-                </div>
-              ))}
-
-              <button type="button" className="btn btn-primary mt-3" onClick={gerarRelatorio}>
+      <button type="button" className="btn btn-primary mt-3" onClick={gerarRelatorio}>
                 Gerar Relatório
               </button>
             </form>

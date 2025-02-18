@@ -199,6 +199,17 @@ const custoPorMuda = imovel?.num_arvores_plantadas
   
     pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`); // Nome do arquivo com o número da ordem
   };
+
+  const handleSelectAllColumns = () => {
+    const allSelected = Object.values(selectedColumns).every((value) => value);
+  
+    const newSelectedColumns = {};
+    Object.keys(selectedColumns).forEach((key) => {
+      newSelectedColumns[key] = !allSelected;
+    });
+  
+    setSelectedColumns(newSelectedColumns);
+  };
   
 
   const gerarRelatorioPDF = () => {
@@ -417,6 +428,13 @@ const custoPorMuda = imovel?.num_arvores_plantadas
           </div>
           <div className="expense-popup-form">
   <h5>Selecionar Colunas para Relatório</h5>
+  <button
+    type="button"
+    className="btn btn-select-all-columns"
+    onClick={handleSelectAllColumns}
+  >
+    Selecionar Todas as Colunas
+  </button>
   <div>
     <input
       type="checkbox"

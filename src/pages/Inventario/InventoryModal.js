@@ -2,6 +2,7 @@
   import "./InventoryModal.css";
   import jsPDF from "jspdf";
   import "jspdf-autotable";
+  import logo from '../../img/logo.png'; // Importe a logo do seu diretório
 
   const InventoryModal = ({ isOpen, onClose, imovelId }) => {
     const [inventoryData, setInventoryData] = useState({
@@ -108,6 +109,14 @@
         format: "a4",
       });
     
+      // Adicionar a logo centralizada na parte superior
+      const logoWidth = 50; // Largura da logo
+      const logoHeight = 20; // Altura da logo
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const logoX = (pageWidth - logoWidth) / 2;
+      doc.addImage(logo, 'PNG', logoX, 10, logoWidth, logoHeight);
+    
+      // Adicionar a tabela abaixo da logo
       doc.autoTable({
         head: [
           [
@@ -159,11 +168,19 @@
           fontSize: 8,
           cellPadding: 1,
         },
-        margin: { top: 10 },
-        startY: 10,
+        margin: { top: 40 }, // Ajuste a margem superior para acomodar a logo
+        startY: 40, // Ajuste o início da tabela para acomodar a logo
         theme: "grid",
         tableWidth: "auto",
       });
+    
+      // Adicionar a data de emissão no final da folha
+      const currentDate = new Date();
+      const formattedDate = formatDate(currentDate.toISOString().split('T')[0]);
+      const text = `Data de emissão: ${formattedDate}`;
+      const textWidth = doc.getStringUnitWidth(text) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+      const textX = (pageWidth - textWidth) / 2;
+      doc.text(text, textX, doc.internal.pageSize.getHeight() - 10);
     
       doc.save("relatorio_inventario.pdf");
     };

@@ -146,6 +146,21 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
     console.log("Salvar alterações no imóvel");
   };
 
+  const handleSelectAll = () => {
+    const allFieldsSelected = Object.keys(imovel).every(
+      (key) => selectedFields[key]
+    );
+  
+    const newSelectedFields = {};
+    Object.keys(imovel).forEach((key) => {
+      if (key !== "id") {
+        newSelectedFields[key] = !allFieldsSelected;
+      }
+    });
+  
+    setSelectedFields(newSelectedFields);
+  };
+
 
 
   const handleGenerateReport = () => {
@@ -450,10 +465,13 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
         imovelId={id}
       />
 
-      {isReportModalOpen && (
+{isReportModalOpen && (
   <div className="custom-modal">
     <h2 className="modal-title">Selecione as Propriedades para o Relatório</h2>
     <div className="custom-form-group">
+      <button className="btn btn-select-all" onClick={handleSelectAll}>
+        Selecionar Todos
+      </button>
       {Object.keys(imovel).map((key) => {
         const label = fieldLabels[key] || key.replace(/_/g, " ").toUpperCase();
         return (
@@ -485,46 +503,6 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
     </div>
   </div>
 )}
-{isReportModalOpen && (
-  <>
-    <div className="modal-overlay" onClick={() => setIsReportModalOpen(false)}></div>
-    <div className="custom-modal">
-      <h2 className="modal-title">Selecione as Propriedades para o Relatório</h2>
-      <div className="custom-form-group">
-        {Object.keys(imovel).map((key) => {
-          const label = fieldLabels[key] || key.replace(/_/g, " ").toUpperCase();
-          return (
-            key !== "id" && (
-              <div key={key} className="custom-checkbox">
-                <input
-                  type="checkbox"
-                  id={key}
-                  name={key}
-                  checked={selectedFields[key] || false}
-                  onChange={handleFieldChange}
-                />
-                <label htmlFor={key}>{label}</label>
-              </div>
-            )
-          );
-        })}
-      </div>
-      <div className="modal-actions">
-        <button className="btn btn-success" onClick={handleGenerateReport}>
-          Gerar Relatório
-        </button>
-        <button
-          className="btn btn-danger"
-          onClick={() => setIsReportModalOpen(false)}
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </>
-)}
-
-
     </div>
   );
 };

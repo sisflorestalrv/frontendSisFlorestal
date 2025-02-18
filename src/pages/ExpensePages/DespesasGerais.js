@@ -47,7 +47,7 @@ const ExpensesPage = () => {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
 
-    const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize();
+  
     const titleX = (doc.internal.pageSize.width - logoWidth) / 2.6;
     const titleY = logoY + logoHeight + 10;
     
@@ -58,6 +58,8 @@ const ExpensesPage = () => {
       expense.descricao,
       expense.produto,
       expense.quantidade,
+      expense.descricao_imovel,
+      expense.fornecedor,
       `R$ ${Number(expense.total).toFixed(2)}`,
       new Date(expense.validade).toLocaleDateString('pt-BR'),
       
@@ -65,7 +67,7 @@ const ExpensesPage = () => {
     ]);
 
     doc.autoTable({
-      head: [['Data', 'Descrição', 'Produto', 'Quantidade', 'Valor Total', 'Vencimento']],
+      head: [['Data', 'Descrição', 'Produto', 'Quantidade','Imóvel', 'Fornecedor', 'Valor Total', 'Vencimento']],
       body: tableData,
       startY: titleY + 20,
       theme: 'grid',
@@ -126,6 +128,7 @@ const ExpensesPage = () => {
             <th></th>
             <th>Data</th>
             <th>Imóvel</th>
+            <th>Fornecedor</th>
             <th>Descrição</th>
             <th>Quantidade</th>
             <th>Valor</th>
@@ -144,6 +147,7 @@ const ExpensesPage = () => {
                 </td>
                 <td>{formatDate(expense.data)}</td>
                 <td>{expense.descricao_imovel}</td>
+                <td>{expense.fornecedor}</td> 
                 <td>{expense.descricao}</td>
                 <td>{parseInt(expense.quantidade, 10)}</td>
                 <td>R$ {Number(expense.total).toFixed(2)}</td>
