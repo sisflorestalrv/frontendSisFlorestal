@@ -87,6 +87,11 @@
     };
 
     const handleDelete = async (id) => {
+      const confirmDelete = window.confirm("Você tem certeza que deseja excluir este imóvel?");
+      if (!confirmDelete) {
+        return; // Se o usuário clicar em "Cancelar", a exclusão não será realizada
+      }
+    
       try {
         await fetch(`http://localhost:5000/api/imoveis/${id}`, {
           method: 'DELETE',
@@ -96,6 +101,7 @@
         console.error('Erro ao excluir imóvel:', error);
       }
     };
+    
 
     const handleFilterChange = (e) => {
       const { name, value } = e.target;
