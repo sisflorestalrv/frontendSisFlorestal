@@ -1,143 +1,150 @@
-  import React, { useState, useEffect } from 'react';
-  import { FaSearch, FaFilter, FaFilePdf } from 'react-icons/fa';
-  import { Link } from 'react-router-dom';
-  import jsPDF from 'jspdf';
-  import logo from '../../img/logo.png'; // Importe a logo do seu diretório
+import React, { useState, useEffect } from 'react';
+import { FaSearch, FaFilter, FaFilePdf } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable'; // Adicionado para garantir que o 'autoTable' funcione
+import logo from '../../img/logo.png'; // Importe a logo do seu diretório
 
-  const ViewImoveis = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [imoveis, setImoveis] = useState([]);
-    const [showFilters, setShowFilters] = useState(false); // Controla a visibilidade dos filtros
-    const [showReportFilters, setShowReportFilters] = useState(false); // Controla a visibilidade do filtro de relatório
-    const [sortCriteria, setSortCriteria] = useState('');
+const ViewImoveis = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [imoveis, setImoveis] = useState([]);
+  const [showFilters, setShowFilters] = useState(false); // Controla a visibilidade dos filtros
+  const [showReportFilters, setShowReportFilters] = useState(false); // Controla a visibilidade do filtro de relatório
+  const [sortCriteria, setSortCriteria] = useState('');
 
-    const [filters, setFilters] = useState({
-      especie: '',
-      proprietario: '',
-      area_imovel_min: '',
-      area_imovel_max: '',
-      data_contrato_start: '',
-      data_contrato_end: '',
-    });
-    const [reportFilters, setReportFilters] = useState({
-      tipoImovel: 'todos', // Pode ser 'próprio' ou 'arrendado'
+  const [filters, setFilters] = useState({
+    especie: '',
+    proprietario: '',
+    area_imovel_min: '',
+    area_imovel_max: '',
+    data_contrato_start: '',
+    data_contrato_end: '',
+  });
+  const [reportFilters, setReportFilters] = useState({
+    tipoImovel: 'todos', // Pode ser 'próprio' ou 'arrendado'
+    atributos: {
+      descricao: false,
+      area_imovel: false,
+      area_plantio: false,
+      especie: false,
+      num_arvores_plantadas: false,
+      num_arvores_cortadas: false,
+      num_arvores_remanescentes: false,
+      matricula: false,
+      data_plantio: false,
+      vencimento_contrato: false,
+      data_contrato: false,
+      proprietario: false,
+      arrendatario: false,
+      municipio: false,
+      localidade: false,
+      altura_desrama: false,
+      numero_car: false,
+      codigo_cc: false,
+    },
+  });
+
+  const friendlyNames = {
+    descricao: 'Descrição',
+    area_imovel: 'Área do Imóvel (ha)',
+    area_plantio: 'Área de Plantio (ha)',
+    especie: 'Espécie',
+    num_arvores_plantadas: 'Número de Árvores Plantadas',
+    num_arvores_cortadas: 'Número de Árvores Cortadas',
+    num_arvores_remanescentes: 'Número de Árvores Remanescentes',
+    matricula: 'Matrícula',
+    data_plantio: 'Data de Plantio',
+    vencimento_contrato: 'Vencimento do Contrato',
+    data_contrato: 'Data do Contrato',
+    proprietario: 'Proprietário',
+    arrendatario: 'Arrendatário',
+    municipio: 'Município',
+    localidade: 'Localidade',
+    altura_desrama: 'Altura da Desrama',
+    numero_car: 'Número do CAR',
+    codigo_cc: 'Código CC',
+  };
+  
+  const getFriendlyName = (key) => friendlyNames[key] || key.replace('_', ' ').toUpperCase();
+  
+  
+
+  const fetchImoveis = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/imoveis');
+      const data = await response.json();
+      setImoveis(data);
+    } catch (error) {
+      console.error('Erro ao buscar imóveis:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchImoveis();
+  }, []);
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Você tem certeza que deseja excluir este imóvel?");
+    if (!confirmDelete) {
+      return; // Se o usuário clicar em "Cancelar", a exclusão não será realizada
+    }
+  
+    try {
+      await fetch(`http://localhost:5000/api/imoveis/${id}`, {
+        method: 'DELETE',
+      });
+      setImoveis(imoveis.filter((imovel) => imovel.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir imóvel:', error);
+    }
+  };
+  
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value
+    }));
+  };
+
+  const handleReportFilterChange = (e) => {
+    const { name, value } = e.target;
+    setReportFilters((prevReportFilters) => ({
+      ...prevReportFilters,
+      [name]: value
+    }));
+  };
+
+  const handleReportAtributosChange = (e) => {
+    const { name, checked } = e.target;
+    setReportFilters((prevReportFilters) => ({
+      ...prevReportFilters,
       atributos: {
-        descricao: false,
-        area_imovel: false,
-        area_plantio: false,
-        especie: false,
-        num_arvores_plantadas: false,
-        num_arvores_cortadas: false,
-        num_arvores_remanescentes: false,
-        matricula: false,
-        data_plantio: false,
-        vencimento_contrato: false,
-        data_contrato: false,
-        proprietario: false,
-        arrendatario: false,
-        municipio: false,
-        localidade: false,
-        altura_desrama: false,
-        numero_car: false,
-        codigo_cc: false,
-      },
-    });
-
-    const friendlyNames = {
-      descricao: 'Descrição',
-      area_imovel: 'Área do Imóvel (m²)',
-      area_plantio: 'Área de Plantio (m²)',
-      especie: 'Espécie',
-      num_arvores_plantadas: 'Número de Árvores Plantadas',
-      num_arvores_cortadas: 'Número de Árvores Cortadas',
-      num_arvores_remanescentes: 'Número de Árvores Remanescentes',
-      matricula: 'Matrícula',
-      data_plantio: 'Data de Plantio',
-      vencimento_contrato: 'Vencimento do Contrato',
-      data_contrato: 'Data do Contrato',
-      proprietario: 'Proprietário',
-      arrendatario: 'Arrendatário',
-      municipio: 'Município',
-      localidade: 'Localidade',
-      altura_desrama: 'Altura da Desrama',
-      numero_car: 'Número do CAR',
-      codigo_cc: 'Código CC',
-    };
-    
-    const getFriendlyName = (key) => friendlyNames[key] || key.replace('_', ' ').toUpperCase();
-    
-    
-
-    const fetchImoveis = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/imoveis');
-        const data = await response.json();
-        setImoveis(data);
-      } catch (error) {
-        console.error('Erro ao buscar imóveis:', error);
+        ...prevReportFilters.atributos,
+        [name]: checked
       }
-    };
+    }));
+  };
 
-    useEffect(() => {
-      fetchImoveis();
-    }, []);
-
-    const handleSearchChange = (e) => {
-      setSearchTerm(e.target.value);
-    };
-
-    const handleDelete = async (id) => {
-      const confirmDelete = window.confirm("Você tem certeza que deseja excluir este imóvel?");
-      if (!confirmDelete) {
-        return; // Se o usuário clicar em "Cancelar", a exclusão não será realizada
-      }
-    
-      try {
-        await fetch(`http://localhost:5000/api/imoveis/${id}`, {
-          method: 'DELETE',
-        });
-        setImoveis(imoveis.filter((imovel) => imovel.id !== id));
-      } catch (error) {
-        console.error('Erro ao excluir imóvel:', error);
-      }
-    };
-    
-
-    const handleFilterChange = (e) => {
-      const { name, value } = e.target;
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        [name]: value
-      }));
-    };
-
-    const handleReportFilterChange = (e) => {
-      const { name, value } = e.target;
-      setReportFilters((prevReportFilters) => ({
-        ...prevReportFilters,
-        [name]: value
-      }));
-    };
-
-    const handleReportAtributosChange = (e) => {
-      const { name, checked } = e.target;
-      setReportFilters((prevReportFilters) => ({
-        ...prevReportFilters,
-        atributos: {
-          ...prevReportFilters.atributos,
-          [name]: checked
-        }
-      }));
-    };
-
-    const filteredImoveis = imoveis
+  const filteredImoveis = imoveis
   .filter((imovel) => {
     const matchesSearchTerm = imovel.descricao && imovel.descricao.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEspecie = imovel.especie && imovel.especie.toLowerCase().includes(filters.especie.toLowerCase());
     const matchesProprietario = imovel.proprietario && imovel.proprietario.toLowerCase().includes(filters.proprietario.toLowerCase());
+    
+    // LÓGICA DE FILTRO ALTERADA: Para aceitar vírgula ou ponto como separador decimal.
+    const areaMinText = filters.area_imovel_min ? String(filters.area_imovel_min).replace(',', '.') : '';
+    const areaMaxText = filters.area_imovel_max ? String(filters.area_imovel_max).replace(',', '.') : '';
+
     const matchesAreaImovel =
-      (filters.area_imovel_min ? imovel.area_imovel >= parseFloat(filters.area_imovel_min) : true) &&
-      (filters.area_imovel_max ? imovel.area_imovel <= parseFloat(filters.area_imovel_max) : true);
+      (areaMinText ? imovel.area_imovel >= parseFloat(areaMinText) : true) &&
+      (areaMaxText ? imovel.area_imovel <= parseFloat(areaMaxText) : true);
+
     const matchesDataContrato =
       (filters.data_contrato_start ? new Date(imovel.data_contrato) >= new Date(filters.data_contrato_start) : true) &&
       (filters.data_contrato_end ? new Date(imovel.data_contrato) <= new Date(filters.data_contrato_end) : true);
@@ -156,17 +163,22 @@
   })
   .sort((a, b) => {
     if (sortCriteria === 'descricao') {
-      // Ordenar por descrição
-      return a.descricao.localeCompare(b.descricao);
+        return a.descricao.localeCompare(b.descricao);
     } else if (sortCriteria === 'area_plantio') {
-      // Ordenar por área de plantio (maior para menor)
-      return b.area_plantio - a.area_plantio;
+        return b.area_plantio - a.area_plantio;
     } else if (sortCriteria === 'proprietario') {
-      // Ordenar por proprietário
-      return a.proprietario.localeCompare(b.proprietario);
+        return a.proprietario.localeCompare(b.proprietario);
+    } else if (sortCriteria === 'data_plantio_desc') {
+        return new Date(b.data_plantio) - new Date(a.data_plantio);
+    } else if (sortCriteria === 'codigo_cc') { // Adicione este bloco
+        // Garante que valores nulos ou indefinidos não quebrem a ordenação
+        const valA = a.codigo_cc || '';
+        const valB = b.codigo_cc || '';
+        // Usa localeCompare com a opção 'numeric' para ordenar corretamente números e textos
+        return String(valA).localeCompare(String(valB), undefined, { numeric: true });
     }
     return 0; // Sem ordenação
-  });
+});
 
   const formatarData = (data) => {
     if (!data) return "Não disponível"; // Caso a data seja nula ou indefinida
@@ -179,7 +191,23 @@
     return `${dia}/${mes}/${ano}`;
   };
 
-    
+  // FUNÇÃO: Para formatar números com vírgula (padrão brasileiro)
+  const formatarNumero = (num) => {
+    if (num === null || num === undefined || String(num).trim() === '') {
+      return "N/A"; // Retorna um placeholder se o valor for nulo, indefinido ou vazio
+    }
+    // Converte a string (que pode ter vírgula ou ponto) para um número padrão
+    const numero = Number(String(num).replace(',', '.'));
+    if (isNaN(numero)) {
+      return "N/A"; // Retorna se a conversão falhar
+    }
+    // Formata o número para o padrão pt-BR com duas casas decimais
+    return numero.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
 
   
   const gerarRelatorio = () => {
@@ -192,10 +220,10 @@
             selectedAttributes['Descrição'] = imovel.descricao;
             break;
           case 'area_imovel':
-            selectedAttributes['Área do Imóvel (m²)'] = imovel.area_imovel;
+            selectedAttributes['Área do Imóvel (ha)'] = formatarNumero(imovel.area_imovel);
             break;
           case 'area_plantio':
-            selectedAttributes['Área de Plantio (m²)'] = imovel.area_plantio;
+            selectedAttributes['Área de Plantio (ha)'] = formatarNumero(imovel.area_plantio);
             break;
           case 'especie':
             selectedAttributes['Espécie'] = imovel.especie;
@@ -240,7 +268,7 @@
             selectedAttributes['Código CC'] = imovel.codigo_cc;
             break;
           case 'altura_desrama':
-            selectedAttributes['Altura da Desrama'] = imovel.altura_desrama;
+            selectedAttributes['Altura da Desrama'] = formatarNumero(imovel.altura_desrama);
             break;
           default:
             selectedAttributes[key.replace('_', ' ')] = imovel[key];
@@ -271,9 +299,9 @@
           case 'descricao':
             return 'Descrição'; // Aqui você ajusta para 'Descrição'
           case 'area_imovel':
-            return 'Área do Imóvel (m²)';
+            return 'Área do Imóvel (ha)';
           case 'area_plantio':
-            return 'Área de Plantio (m²)';
+            return 'Área de Plantio (ha)';
           case 'especie':
             return 'Espécie';
           case 'num_arvores_plantadas':
@@ -310,7 +338,9 @@
       });
   
     const dados = relatorioImoveis.map((imovel) => {
-      return colunas.map((col) => imovel[col] || "Não disponível");
+      // ALTERADO: Usa o operador '??' (coalescência nula) que preserva o valor 0 (zero),
+      // tratando apenas 'null' e 'undefined' como "Não disponível".
+      return colunas.map((col) => imovel[col] ?? "Não disponível");
     });
   
     // Gerar a tabela com apenas cabeçalho e corpo da tabela com fundo branco e texto preto
@@ -348,190 +378,207 @@ const selecionarTodosAtributos = () => {
   
   
 
-    return (
-      <div className="container mt-4">
-        <h1 className="text-center">Visualização de Imóveis</h1>
+  return (
+    <div className="container mt-4">
+      <h1 className="text-center">Visualização de Imóveis</h1>
 
-        {/* Barra de pesquisa */}
-        <div className="search-bar mt-4 d-flex justify-content-between align-items-center">
-          <div className="input-group">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Pesquisar imóvel..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-            <span className="input-group-text">
-              <FaSearch />
-            </span>
-          </div>
-          <button className="btn btn-success ms-2" onClick={() => setShowFilters(!showFilters)}>
-            <FaFilter /> Filtrar
-          </button>
-          <button className="btn btn-primary ms-2" onClick={() => setShowReportFilters(!showReportFilters)}>
-            <FaFilePdf /> Gerar Relatório
-          </button>
+      {/* Barra de pesquisa */}
+      <div className="search-bar mt-4 d-flex justify-content-between align-items-center">
+        <div className="input-group">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Pesquisar imóvel..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          <span className="input-group-text">
+            <FaSearch />
+          </span>
         </div>
-        <div className="mb-2">
-  <label htmlFor="sortCriteria" className="form-label">Ordenar por:</label>
-  <select
-    id="sortCriteria"
-    name="sortCriteria"
-    className="form-control"
-    value={sortCriteria}
-    onChange={(e) => setSortCriteria(e.target.value)}
-  >
-    <option value="">Selecione...</option>
-    <option value="descricao">Descrição (A-Z)</option>
-    <option value="area_plantio">Área de Plantio (maior primeiro)</option>
-    <option value="proprietario">Proprietário (A-Z)</option>
-  </select>
-</div>
-
-
-        {/* Caixa de filtros de pesquisa */}
-        {showFilters && (
-          <div className="mt-3 p-3 border rounded">
-            <h5>Filtros de Pesquisa</h5>
-            <form>
-              <div className="mb-2">
-                <label htmlFor="especie" className="form-label">Espécie:</label>
-                <input
-                  type="text"
-                  id="especie"
-                  name="especie"
-                  className="form-control"
-                  value={filters.especie}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="mb-2">
-                <label htmlFor="proprietario" className="form-label">Proprietário:</label>
-                <input
-                  type="text"
-                  id="proprietario"
-                  name="proprietario"
-                  className="form-control"
-                  value={filters.proprietario}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="mb-2">
-                <label htmlFor="area_imovel_min" className="form-label">Área mínima (m²):</label>
-                <input
-                  type="number"
-                  id="area_imovel_min"
-                  name="area_imovel_min"
-                  className="form-control"
-                  value={filters.area_imovel_min}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="mb-2">
-                <label htmlFor="area_imovel_max" className="form-label">Área máxima (m²):</label>
-                <input
-                  type="number"
-                  id="area_imovel_max"
-                  name="area_imovel_max"
-                  className="form-control"
-                  value={filters.area_imovel_max}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="mb-2">
-                <label htmlFor="data_contrato_start" className="form-label">Data contrato (início):</label>
-                <input
-                  type="date"
-                  id="data_contrato_start"
-                  name="data_contrato_start"
-                  className="form-control"
-                  value={filters.data_contrato_start}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="mb-2">
-                <label htmlFor="data_contrato_end" className="form-label">Data contrato (fim):</label>
-                <input
-                  type="date"
-                  id="data_contrato_end"
-                  name="data_contrato_end"
-                  className="form-control"
-                  value={filters.data_contrato_end}
-                  onChange={handleFilterChange}
-                />
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Caixa de filtros para gerar relatório */}
-        {showReportFilters && (
-  <div className="mt-3 p-3 border rounded">
-    <h5>Filtros do Relatório</h5>
-    <form>
+        <button className="btn btn-success ms-2" onClick={() => setShowFilters(!showFilters)}>
+          <FaFilter /> Filtrar
+        </button>
+        <button className="btn btn-primary ms-2" onClick={() => setShowReportFilters(!showReportFilters)}>
+          <FaFilePdf /> Gerar Relatório
+        </button>
+      </div>
       <div className="mb-2">
-        <label htmlFor="tipoImovel" className="form-label">Tipo de Imóvel:</label>
+        <label htmlFor="sortCriteria" className="form-label">Ordenar por:</label>
         <select
-          id="tipoImovel"
-          name="tipoImovel"
-          className="form-control"
-          value={reportFilters.tipoImovel}
-          onChange={handleReportFilterChange}
+        id="sortCriteria"
+        name="sortCriteria"
+        className="form-control"
+        value={sortCriteria}
+        onChange={(e) => setSortCriteria(e.target.value)}
         >
-          <option value="todos">Todos</option>
-          <option value="proprio">Próprio</option>
-          <option value="arrendado">Arrendado</option>
+        <option value="">Selecione...</option>
+        <option value="descricao">Descrição (A-Z)</option>
+        <option value="area_plantio">Área de Plantio (maior primeiro)</option>
+        <option value="proprietario">Proprietário (A-Z)</option>
+        <option value="data_plantio_desc">Data de Plantio (mais recente)</option>
+        <option value="codigo_cc">Código CC</option> 
         </select>
       </div>
 
-      {/* Botão para selecionar todos os atributos */}
-      <button
-        type="button"
-        className="btn btn-secondary mb-3"
-        onClick={selecionarTodosAtributos}
-      >
-        Selecionar Todos
-      </button>
 
-      {/* Atributos a incluir no relatório */}
-      <h6>Atributos para o Relatório:</h6>
-      {Object.keys(reportFilters.atributos).map((key) => (
-        <div className="form-check" key={key}>
-          <input
-            type="checkbox"
-            className="form-check-input"
-            name={key}
-            checked={reportFilters.atributos[key]}
-            onChange={handleReportAtributosChange}
-          />
-          <label className="form-check-label">{getFriendlyName(key)}</label>
+      {/* Caixa de filtros de pesquisa */}
+      {showFilters && (
+        <div className="mt-3 p-3 border rounded">
+          <h5>Filtros de Pesquisa</h5>
+          <form>
+            <div className="mb-2">
+              <label htmlFor="especie" className="form-label">Espécie:</label>
+              <input
+                type="text"
+                id="especie"
+                name="especie"
+                className="form-control"
+                value={filters.especie}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="proprietario" className="form-label">Proprietário:</label>
+              <input
+                type="text"
+                id="proprietario"
+                name="proprietario"
+                className="form-control"
+                value={filters.proprietario}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="area_imovel_min" className="form-label">Área mínima (ha):</label>
+              <input
+                type="number"
+                step="any" // Permite a inserção de números decimais
+                id="area_imovel_min"
+                name="area_imovel_min"
+                className="form-control"
+                value={filters.area_imovel_min}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="area_imovel_max" className="form-label">Área máxima (ha):</label>
+              <input
+                type="number"
+                step="any" // Permite a inserção de números decimais
+                id="area_imovel_max"
+                name="area_imovel_max"
+                className="form-control"
+                value={filters.area_imovel_max}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="data_contrato_start" className="form-label">Data contrato (início):</label>
+              <input
+                type="date"
+                id="data_contrato_start"
+                name="data_contrato_start"
+                className="form-control"
+                value={filters.data_contrato_start}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="mb-2">
+              <label htmlFor="data_contrato_end" className="form-label">Data contrato (fim):</label>
+              <input
+                type="date"
+                id="data_contrato_end"
+                name="data_contrato_end"
+                className="form-control"
+                value={filters.data_contrato_end}
+                onChange={handleFilterChange}
+              />
+            </div>
+          </form>
         </div>
-      ))}
+      )}
 
-      <button type="button" className="btn btn-primary mt-3" onClick={gerarRelatorio}>
-                Gerar Relatório
-              </button>
-            </form>
+      {/* Caixa de filtros para gerar relatório */}
+      {showReportFilters && (
+      <div className="mt-3 p-3 border rounded">
+        <h5>Filtros do Relatório</h5>
+        <form>
+          <div className="mb-2">
+            <label htmlFor="tipoImovel" className="form-label">Tipo de Imóvel:</label>
+            <select
+              id="tipoImovel"
+              name="tipoImovel"
+              className="form-control"
+              value={reportFilters.tipoImovel}
+              onChange={handleReportFilterChange}
+            >
+              <option value="todos">Todos</option>
+              <option value="proprio">Próprio</option>
+              <option value="arrendado">Arrendado</option>
+            </select>
           </div>
-        )}
+
+          {/* Botão para selecionar todos os atributos */}
+          <button
+            type="button"
+            className="btn btn-secondary mb-3"
+            onClick={selecionarTodosAtributos}
+          >
+            Selecionar Todos
+          </button>
+
+          {/* Atributos a incluir no relatório */}
+          <h6>Atributos para o Relatório:</h6>
+          {Object.keys(reportFilters.atributos).map((key) => (
+            <div className="form-check" key={key}>
+              <input
+                type="checkbox"
+                className="form-check-input"
+                name={key}
+                checked={reportFilters.atributos[key]}
+                onChange={handleReportAtributosChange}
+              />
+              <label className="form-check-label">{getFriendlyName(key)}</label>
+            </div>
+          ))}
+
+          <button type="button" className="btn btn-primary mt-3" onClick={gerarRelatorio}>
+                  Gerar Relatório
+                </button>
+              </form>
+            </div>
+      )}
 
 {/* Lista de imóveis filtrados */}
 <div className="imoveis-list mt-4">
   {filteredImoveis.length > 0 ? (
     <table className="table table-striped">
       <thead>
-  <tr className="table-header">
-    <th>Descrição</th>
-    <th>Área de Plantio (m²)</th>
-    <th>Espécie</th>
-    <th>Proprietário</th>
-  </tr>
-</thead>
+        <tr className="table-header">
+          <th>Código CC</th>
+          <th>Descrição</th>
+          <th>Data de Plantio</th>
+          <th>Área de Plantio (ha)</th>
+          <th>Espécie</th>
+          <th>Proprietário</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
 
       <tbody>
         {filteredImoveis.map((imovel) => (
           <tr key={imovel.id}>
+            <td>
+              <Link
+                to={`/imovel/${imovel.id}`}
+                className="text-decoration-none text-dark"
+                style={{ color: "inherit" }}
+              >
+                {imovel.codigo_cc}
+              </Link>
+            </td>
+            
             <td>
               <Link
                 to={`/imovel/${imovel.id}`}
@@ -547,7 +594,17 @@ const selecionarTodosAtributos = () => {
                 className="text-decoration-none text-dark"
                 style={{ color: "inherit" }}
               >
-                {imovel.area_plantio}
+                {formatarData(imovel.data_plantio)}
+              </Link>
+            </td>
+            <td>
+              <Link
+                to={`/imovel/${imovel.id}`}
+                className="text-decoration-none text-dark"
+                style={{ color: "inherit" }}
+              >
+                {/* Formata a área de plantio na tabela */}
+                {formatarNumero(imovel.area_plantio)}
               </Link>
             </td>
             <td>
@@ -569,13 +626,13 @@ const selecionarTodosAtributos = () => {
               </Link>
             </td>
             <td>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDelete(imovel.id)}
-                    >
-                      Excluir
-                    </button>
-                  </td>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleDelete(imovel.id)}
+                  >
+                    Excluir
+                  </button>
+                </td>
           </tr>
         ))}
       </tbody>
@@ -586,8 +643,8 @@ const selecionarTodosAtributos = () => {
 </div>
 
 
-      </div>
-    );
-  };
+    </div>
+  );
+};
 
-  export default ViewImoveis;
+export default ViewImoveis;
