@@ -43,33 +43,33 @@ const ImovelDetails = () => {
   const checkContractExpiration = (vencimentoContrato) => {
     const today = new Date();
     const vencimentoDate = new Date(vencimentoContrato);
-  
+
     // Calcular a diferença em milissegundos
     const diffTime = vencimentoDate - today;
-  
+
     // Se a data de vencimento for no passado
     if (diffTime < 0) {
       return "Contrato já venceu!";
     }
-  
+
     // Calcular a diferença em dias
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
     // Se faltar menos de 30 dias para vencer
     if (diffDays <= 30) {
       return `Contrato prestes a vencer em ${diffDays} dias.`;
     }
-  
+
     return null; // Se o contrato não está perto de vencer
   };
-  
+
   const fetchImovelDetails = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/imoveis/${id}`);
       if (!response.ok) throw new Error("Imóvel não encontrado");
       const data = await response.json();
       setImovel(data);
-  
+
       // Verifique se o vencimento do contrato está disponível antes de calcular a expiração
       if (data.vencimento_contrato) {
         const expirationMessage = checkContractExpiration(data.vencimento_contrato);
@@ -82,8 +82,8 @@ const ImovelDetails = () => {
       setImovel(undefined);
     }
   };
-  
-  
+
+
 
   useEffect(() => {
     fetchImovelDetails();
@@ -150,14 +150,14 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
     const allFieldsSelected = Object.keys(imovel).every(
       (key) => selectedFields[key]
     );
-  
+
     const newSelectedFields = {};
     Object.keys(imovel).forEach((key) => {
-      if (key !== "id") {
+      if (key !== "id" && key !== "descricao") { // Também não seleciona a descrição aqui
         newSelectedFields[key] = !allFieldsSelected;
       }
     });
-  
+
     setSelectedFields(newSelectedFields);
   };
 
@@ -230,7 +230,7 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
 
       doc.setTextColor(0, 0, 0); // Cor do texto
       doc.text(field.label, margin + 5, yPosition + 7);
-      doc.text(field.value, margin + columnWidth + 5, yPosition + 7);
+      doc.text(String(field.value), margin + columnWidth + 5, yPosition + 7);
 
       yPosition += 15;
 
@@ -257,38 +257,44 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
   };
 
   const formatValue = (value, key) => {
-    // Lista de campos de data no banco de dados
+    // Lista de campos de data
     const dateFields = [
       'data_plantio',
       'data_contrato',
       'vencimento_contrato'
     ];
   
-    // Se a chave for uma das de data, formatar como dd/mm/yyyy
+    // Formata campos de data
     if (dateFields.includes(key) && value) {
       const dateValue = new Date(value);
       if (!isNaN(dateValue.getTime())) {
         const day = String(dateValue.getDate()).padStart(2, "0");
-        const month = String(dateValue.getMonth() + 1).padStart(2, "0"); // Meses começam do 0
+        const month = String(dateValue.getMonth() + 1).padStart(2, "0");
         const year = dateValue.getFullYear();
         return `${day}/${month}/${year}`;
       }
     }
   
-    // Se o valor for vazio, "N/A" ou algo semelhante, retornar null
-    if (!value || value === "N/A") {
-      return null; // Não exibe nada
+    // Retorna nulo para não exibir campos vazios
+    if (value === null || value === undefined || value === "N/A" || value === "") {
+        return null;
+    }
+    
+    // Lista de campos que devem ser formatados como decimal
+    const decimalFields = ['area_imovel', 'area_plantio'];
+
+    // Se a chave (key) for uma das que precisam de formato decimal
+    if (decimalFields.includes(key)) {
+        const numericValue = Number(value);
+        // Se a conversão para número for bem-sucedida, formata com 2 casas decimais
+        if (isFinite(numericValue)) {
+            return numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
     }
   
-    // Se o valor for numérico, retornar como número
-    if (typeof value === "number") {
-      return value.toString(); // Garantir que o valor numérico seja retornado como string
-    }
-  
-    // Caso contrário, retorna o valor original
-    return value;
+    // Para todos os outros casos (outros números, textos, etc.), retorna o valor como está.
+    return String(value);
   };
-  
 
   const fieldLabels = {
     descricao: "Descrição do Imóvel",
@@ -332,10 +338,29 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
     )}
 
     <div className="property-details">
+      {/* ***** INÍCIO DA ALTERAÇÃO ***** */}
+      {/* 1. Renderiza o Código CC primeiro, se ele existir */}
+      {imovel.codigo_cc && (
+        <div className="property-detail" key="codigo_cc">
+          <span className="property-label">{fieldLabels.codigo_cc}:</span>
+          <span className="property-value">{formatValue(imovel.codigo_cc, 'codigo_cc')}</span>
+        </div>
+      )}
+
+      {/* 2. Mapeia o restante dos campos, pulando os que não devem aparecer ou que já apareceram */}
       {Object.keys(imovel).map((key) => {
+        // Pula a renderização dos campos 'id', 'descricao' e agora também 'codigo_cc'
+        if (key === 'id' || key === 'descricao' || key === 'codigo_cc') {
+          return null;
+        }
+
         const formattedValue = formatValue(imovel[key], key);
-        const label = fieldLabels[key] || key; // Usa o mapeamento ou a chave original como fallback
-        if (!formattedValue || formattedValue === "N/A") return null;
+        const label = fieldLabels[key] || key;
+        
+        if (formattedValue === null) {
+          return null;
+        }
+
         return (
           <div className="property-detail" key={key}>
             <span className="property-label">{label}:</span>
@@ -343,7 +368,8 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
           </div>
         );
       })}
-</div>
+      {/* ***** FIM DA ALTERAÇÃO ***** */}
+    </div>
 
 
 <div className="custom-button-group mt-4">
@@ -475,7 +501,8 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
       {Object.keys(imovel).map((key) => {
         const label = fieldLabels[key] || key.replace(/_/g, " ").toUpperCase();
         return (
-          key !== "id" && (
+          // Também não mostra 'id' e 'descricao' nas opções do relatório
+          (key !== "id" && key !== "descricao") && (
             <div key={key} className="custom-checkbox">
               <input
                 type="checkbox"
