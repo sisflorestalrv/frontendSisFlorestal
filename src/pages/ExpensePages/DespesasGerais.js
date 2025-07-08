@@ -33,6 +33,16 @@ const ExpensesPage = () => {
       setSelectedExpenses([...selectedExpenses, expense]);
     }
   };
+  
+  // ✅ NOVA FUNÇÃO PARA FORMATAR MOEDA
+  const formatCurrency = (value) => {
+    const number = Number(value);
+    if (isNaN(number)) return "R$ 0,00"; // Retorno padrão caso o valor seja inválido
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(number);
+  };
 
   const handleGeneratePDF = () => {
     const doc = new jsPDF('landscape');
@@ -47,7 +57,7 @@ const ExpensesPage = () => {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
 
-  
+ 
     const titleX = (doc.internal.pageSize.width - logoWidth) / 2.6;
     const titleY = logoY + logoHeight + 10;
     
@@ -55,19 +65,17 @@ const ExpensesPage = () => {
     
     const tableData = selectedExpenses.map((expense) => [
       new Date(expense.data).toLocaleDateString('pt-BR'),
+      expense.descricao_imovel,
       expense.descricao,
       expense.produto,
       expense.quantidade,
-      expense.descricao_imovel,
+      formatCurrency(expense.total), // ✅ ALTERAÇÃO AQUI
       expense.fornecedor,
-      `R$ ${Number(expense.total).toFixed(2)}`,
       new Date(expense.validade).toLocaleDateString('pt-BR'),
-      
-      
     ]);
 
     doc.autoTable({
-      head: [['Data', 'Descrição', 'Produto', 'Quantidade','Imóvel', 'Fornecedor', 'Valor Total', 'Vencimento']],
+      head: [['Data', 'Imóvel', 'Código CC', 'Produto', 'Quantidade', 'Valor total', 'Fornecedor', 'Vencimento']],
       body: tableData,
       startY: titleY + 20,
       theme: 'grid',
@@ -150,12 +158,12 @@ const ExpensesPage = () => {
                 <td>{expense.fornecedor}</td> 
                 <td>{expense.descricao}</td>
                 <td>{parseInt(expense.quantidade, 10)}</td>
-                <td>R$ {Number(expense.total).toFixed(2)}</td>
+                <td>{formatCurrency(expense.total)}</td> {/* ✅ ALTERAÇÃO AQUI */}
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="5" className="text-center">Nenhuma despesa encontrada.</td>
+              <td colSpan="7" className="text-center">Nenhuma despesa encontrada.</td>
             </tr>
           )}
         </tbody>

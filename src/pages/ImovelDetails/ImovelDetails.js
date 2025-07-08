@@ -394,16 +394,13 @@ const handleCloseInventoryModal = () => setIsInventoryModalOpen(false);
   <button className="custom-button" onClick={handleOpenDesbasteTable}>
     Relatório de Desbaste
   </button>
-  <button onClick={handleOpenGallery} className="custom-button">
-    Galeria
-  </button>
   <button onClick={handleOpenNotasModal} className="custom-button">
     Notas
   </button>
-  <button onClick={() => setIsMapModalOpen(true)} className="custom-button">
-  Mapas
-</button>
-<button className="custom-button" onClick={handleOpenFilesModal}>
+<button 
+  className="custom-button" 
+  onClick={() => window.location.href='https://drive.google.com/drive/folders/1QCx_FSAejryOU2hK-WEV2b37yV8_Okqf?usp=drive_link'}
+>
   Arquivos
 </button>
 <button className="custom-button" onClick={handleOpenInventoryModal}>
