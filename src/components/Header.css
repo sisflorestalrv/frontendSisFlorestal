@@ -1,0 +1,61 @@
+/* Animação para o header surgir ao carregar a página */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilo principal do header */
+.app-header {
+  background-color: #ffffff; /* Fundo branco limpo */
+  padding: 15px 40px; /* Espaçamento interno generoso */
+  display: flex;
+  align-items: center;
+  position: sticky; /* Deixa o header fixo no topo da página */
+  top: 0;
+  z-index: 1000; /* Garante que o header fique sobre outros conteúdos */
+  width: 100%;
+  transition: all 0.3s ease-in-out; /* Transição suave para todas as propriedades */
+  animation: slideDown 0.5s ease-out; /* Aplica a animação inicial */
+  border-bottom: 2px solid transparent; /* Borda inicial transparente */
+}
+
+/* Estilo do header quando a página é rolada */
+.app-header.scrolled {
+  padding: 10px 40px; /* Diminui o espaçamento para um look mais compacto */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra suave para dar profundidade */
+  border-bottom: 2px solid #4CAF50; /* Borda verde que aparece no scroll */
+}
+
+/* Estilo da logo */
+.header-logo {
+  height: 50px; /* Controla o tamanho pela altura para manter a proporção */
+  width: auto;
+  transition: height 0.3s ease-in-out; /* Anima a mudança de tamanho da logo */
+}
+
+/* Logo fica menor quando o header encolhe */
+.app-header.scrolled .header-logo {
+  height: 40px;
+}
+
+/* Ajustes para telas menores (responsividade) */
+@media (max-width: 768px) {
+  .app-header,
+  .app-header.scrolled {
+    padding: 10px 20px; /* Menos espaçamento lateral em telas menores */
+  }
+
+  .header-logo {
+    height: 40px;
+  }
+
+  .app-header.scrolled .header-logo {
+    height: 35px;
+  }
+}

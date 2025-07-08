@@ -1,56 +1,106 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Login.css'; // Certifique-se de importar o CSS aqui
+import './Login.css';
 import logo from '../../img/logo.png';
+// Adicionamos um ícone de alerta para o card de erro
+import { FaUser, FaLock, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
 
 const Login = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // NOVO: Um estado para erros de validação (campos) e outro para erro do servidor
+  const [validationErrors, setValidationErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // NOVO: Função de validação
+  const validateFields = () => {
+    const errors = {};
+    if (!username.trim()) {
+      errors.username = 'O campo de usuário é obrigatório.';
+    }
+    if (!password) {
+      errors.password = 'O campo de senha é obrigatório.';
+    }
+    return errors;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    // Limpa os erros antigos
+    setServerError('');
+    setValidationErrors({});
+    
+    // Roda a validação primeiro
+    const errors = validateFields();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return; // Impede o envio do formulário se houver erros
+    }
+
     try {
       const response = await axios.post('http://localhost:5000/api/login', { username, password });
-      onLoginSuccess(); // Atualiza o estado de autenticação
-      navigate('/'); // Redireciona para a página inicial após o login
+      onLoginSuccess();
+      navigate('/');
     } catch (err) {
-      // Exibe a mensagem de erro sem o alert, apenas no estado
-      setError(err.response?.data?.error || 'Erro ao fazer login');
+      // Define apenas o erro vindo do servidor
+      setServerError(err.response?.data?.error || 'Não foi possível conectar ao servidor.');
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        {/* Logo do projeto */}
-        <img src={logo} alt="Logo do Projeto" className="login-logo" />
+    <div className="login-page">
+      <div className="login-card">
+        <img src={logo} alt="Logo" className="login-logo" />
+        <h1 className="login-title">Bem-vindo de volta!</h1>
+        <p className="login-subtitle">Entre com suas credenciais para continuar</p>
+        
+        <form onSubmit={handleLogin} noValidate>
+          {/* NOVO: O card de erro do servidor agora é mais bonito */}
+          {serverError && (
+            <div className="server-error-card">
+              <FaExclamationTriangle className="error-card-icon" />
+              <p>{serverError}</p>
+            </div>
+          )}
 
-        <h1 className="login-title">Login</h1>
-        <form onSubmit={handleLogin}>
-          <div className="login-input-group">
-            <label className="login-label">Usuário</label>
+          <div className="input-group">
+            <FaUser className="input-icon" />
             <input
               type="text"
-              className="login-input"
+              // NOVO: Classe de erro é aplicada dinamicamente
+              className={`login-input ${validationErrors.username ? 'input-error' : ''}`}
+              placeholder="Usuário"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
+            {/* NOVO: Mensagem de erro específica para o campo */}
+            {validationErrors.username && <p className="field-error-text">{validationErrors.username}</p>}
           </div>
-          <div className="login-input-group">
-            <label className="login-label">Senha</label>
+
+          <div className="input-group">
+            <FaLock className="input-icon" />
             <input
-              type="password"
-              className="login-input"
+              type={showPassword ? 'text' : 'password'}
+              className={`login-input ${validationErrors.password ? 'input-error' : ''}`}
+              placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <span onClick={togglePasswordVisibility} className="password-toggle-icon">
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+            {validationErrors.password && <p className="field-error-text">{validationErrors.password}</p>}
           </div>
+          
           <button type="submit" className="login-button">Entrar</button>
-          {/* Exibindo o erro de login sem usar o alert */}
-          {error && <p className="login-error">{error}</p>}
         </form>
       </div>
     </div>

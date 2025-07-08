@@ -1,10 +1,24 @@
 import React from 'react';
+import './Footer.css'; // 👈 Importe o novo arquivo CSS
 
 const Footer = () => {
+  // Pega o ano atual dinamicamente
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="footer bg-dark text-white text-center py-3">
-      <p>&copy; 2024 Sistema de Imóveis. Todos os direitos reservados.</p>
-      <p>Desenvolvido por Lucas Borinelli Mees| <a href="#" className="text-white">Política de Privacidade</a></p>
+    <footer className="app-footer">
+      <div className="footer-container">
+        {/* Informações de Copyright */}
+        <span className="footer-copyright">
+          &copy; {currentYear} Sistema de Imóveis. Todos os direitos reservados.
+        </span>
+
+        {/* Links e informações adicionais */}
+        <div className="footer-meta">
+          <span>Desenvolvido por Lucas Borinelli Mees</span>
+        
+        </div>
+      </div>
     </footer>
   );
 };
