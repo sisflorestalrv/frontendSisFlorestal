@@ -1,193 +1,224 @@
-import React, { useState, useEffect } from "react";
-import './NotasModal.css'; // Importando o CSS
-import { FaEdit, FaTrashAlt } from 'react-icons/fa'; // Importando os ícones do react-icons
-import PopupAlert from '../PopupAlert'; // Importando o componente PopupAlert
+import React, { useState, useEffect, useCallback } from "react";
+import "./NotasModal.css";
+import { FaEdit, FaTrashAlt, FaPlus, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import { API_BASE_URL } from "../../config";
 
+const initialFormState = { titulo: "", descricao: "" };
+
 const NotasModal = ({ isOpen, onClose, imovelId }) => {
-  const [notas, setNotas] = useState([]);
-  const [novoTitulo, setNovoTitulo] = useState("");
-  const [novaDescricao, setNovaDescricao] = useState("");
-  const [editingNotaId, setEditingNotaId] = useState(null);
-  const [notaDetalhada, setNotaDetalhada] = useState(null);
-  const [popup, setPopup] = useState({ message: "", type: "" }); // Estado para popup
+    const [notas, setNotas] = useState([]);
+    const [formData, setFormData] = useState(initialFormState);
+    const [editingNotaId, setEditingNotaId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const fetchNotas = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`);
-      const data = await response.json();
-      setNotas(data);
-    } catch (error) {
-      console.error("Erro ao buscar as notas:", error);
-    }
-  };
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [notaToDeleteId, setNotaToDeleteId] = useState(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotas();
-    }
-  }, [isOpen, imovelId]);
+    const fetchNotas = useCallback(async () => {
+        if (!imovelId) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`);
+            if (!response.ok) throw new Error("Falha ao carregar as notas.");
+            const data = await response.json();
+            setNotas(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [imovelId]);
 
-  const handleSaveNota = async () => {
-    const notaData = { titulo: novoTitulo, descricao: novaDescricao };
+    useEffect(() => {
+        if (isOpen) {
+            fetchNotas();
+        } else {
+            setNotas([]);
+            setFormData(initialFormState);
+            setEditingNotaId(null);
+            setError(null);
+            setLoading(true);
+            setShowDeleteConfirmation(false);
+            setNotaToDeleteId(null);
+        }
+    }, [isOpen, fetchNotas]);
 
-    try {
-      if (editingNotaId) {
-        // Atualizando nota existente
-        await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${editingNotaId}`, {
-          method: "PUT",
-          body: JSON.stringify(notaData),
-          headers: { "Content-Type": "application/json" },
-        });
-        setPopup({ message: "Nota atualizada com sucesso!", type: "success" });
-      } else {
-        // Criando nova nota
-        await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`, {
-          method: "POST",
-          body: JSON.stringify(notaData),
-          headers: { "Content-Type": "application/json" },
-        });
-        setPopup({ message: "Nota registrada com sucesso!", type: "success" });
-      }
-      setNovoTitulo("");
-      setNovaDescricao("");
-      setEditingNotaId(null);
-      fetchNotas();
-      if (notaDetalhada) {
-        handleCloseNotaDetails(); // Fechar apenas o modal de detalhes
-      }
-    } catch (error) {
-      console.error("Erro ao salvar nota:", error);
-      setPopup({ message: "Erro ao salvar a nota.", type: "error" });
-    }
-  };
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-  const handleDeleteNota = async (notaId) => {
-    try {
-      await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${notaId}`, {
-        method: "DELETE",
-      });
-      setPopup({ message: "Nota excluída com sucesso!", type: "success" });
-      fetchNotas();
-      if (notaDetalhada) {
-        handleCloseNotaDetails(); // Fechar apenas o modal de detalhes
-      }
-    } catch (error) {
-      console.error("Erro ao excluir nota:", error);
-      setPopup({ message: "Erro ao excluir a nota.", type: "error" });
-    }
-  };
+    const handleEditClick = (nota) => {
+        setEditingNotaId(nota.id);
+        setFormData({ titulo: nota.titulo, descricao: nota.descricao });
+        document.querySelector('.notes-form-input[name="titulo"]').focus();
+    };
 
-  const handleShowNotaDetails = (nota) => {
-    setNotaDetalhada(nota);
-    setNovoTitulo(nota.titulo);
-    setNovaDescricao(nota.descricao);
-    setEditingNotaId(nota.id);
-  };
+    const handleCancelEdit = () => {
+        setEditingNotaId(null);
+        setFormData(initialFormState);
+    };
 
-  const handleCloseNotaDetails = () => {
-    setNotaDetalhada(null); // Fechar apenas o modal de detalhes
-  };
+    const handleSaveNota = async () => {
+        const url = editingNotaId
+            ? `${API_BASE_URL}/api/imoveis/${imovelId}/notas/${editingNotaId}`
+            : `${API_BASE_URL}/api/imoveis/${imovelId}/notas`;
+        const method = editingNotaId ? "PUT" : "POST";
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+            if (!response.ok) throw new Error(`Erro ao salvar a nota.`);
+            handleCancelEdit();
+            await fetchNotas();
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
-  return (
-    isOpen && (
-      <div className="notas-modal show">
-        <div className="notas-modal-content">
-          <button className="notas-modal-close-btn" onClick={onClose}>X</button>
-          <h2>Notas do Imóvel</h2>
+    const confirmDelete = (notaId) => {
+        setNotaToDeleteId(notaId);
+        setShowDeleteConfirmation(true);
+    };
+    
+    const cancelDelete = () => {
+        setShowDeleteConfirmation(false);
+        setNotaToDeleteId(null);
+    };
+    
+    const executeDelete = async () => {
+        if (!notaToDeleteId) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${notaToDeleteId}`, {
+                method: "DELETE",
+            });
+            if (!response.ok) throw new Error("Erro ao excluir a nota.");
+            if(editingNotaId === notaToDeleteId) {
+                handleCancelEdit();
+            }
+            await fetchNotas();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            cancelDelete();
+        }
+    };
 
-          {/* Exibindo o PopupAlert */}
-          {popup.message && <PopupAlert message={popup.message} onClose={() => setPopup({ message: "", type: "" })} type={popup.type} />}
+    if (!isOpen) return null;
 
-          <div className="notas-modal-body">
-            <input
-              type="text"
-              placeholder="Título"
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-              className="input-modal"
-            />
-            <textarea
-              placeholder="Descrição"
-              value={novaDescricao}
-              onChange={(e) => setNovaDescricao(e.target.value)}
-              className="textarea-modal"
-            ></textarea>
-            <button className="notas-modal-button" onClick={handleSaveNota}>Salvar Nota</button>
-            <h3>Notas Registradas</h3>
-            <table className="notas-modal-table">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Descrição</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {notas.map((nota) => (
-                  <tr key={nota.id}>
-                    <td>{nota.titulo}</td>
-                    <td>{nota.descricao}</td>
-                    <td>
-                      <button
-                        className="btn btn-info"
-                        onClick={() => handleShowNotaDetails(nota)} // Exibe os detalhes da nota
-                      >
-                        Ver Detalhes
-                      </button>
-                      <button
-                        className="btn btn-warning"
-                        onClick={() => { setNovoTitulo(nota.titulo); setNovaDescricao(nota.descricao); setEditingNotaId(nota.id); }}
-                      >
-                        <FaEdit /> Editar
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => handleDeleteNota(nota.id)}
-                      >
-                        <FaTrashAlt /> Excluir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+    return (
+        <>
+            {showDeleteConfirmation && (
+                // MUDANÇA AQUI: Adicionamos a classe 'delete-confirmation-overlay'
+                <div className="delete-confirmation-overlay" onClick={cancelDelete}>
+                    <div className="delete-confirmation-modal" onClick={(e) => e.stopPropagation()}>
+                        <FaExclamationTriangle className="warning-icon" />
+                        <h3>Confirmar Exclusão</h3>
+                        <p>Tem certeza que deseja excluir esta nota? Esta ação não pode ser desfeita.</p>
+                        <div className="modal-footer-stacked">
+                            <button className="btn-danger-stacked" onClick={executeDelete}>
+                                <FaTrashAlt /> Confirmar Exclusão
+                            </button>
+                            <button className="btn-link-stacked" onClick={cancelDelete}>
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-        {notaDetalhada && (
-          <div className="nota-detalhada-modal show">
-            <div className="nota-detalhada-modal-content">
-              <button className="nota-detalhada-modal-close-btn" onClick={handleCloseNotaDetails}>Fechar</button>
-              <h2>Editando: {notaDetalhada.titulo}</h2>
-              <input
-                type="text"
-                value={novoTitulo}
-                onChange={(e) => setNovoTitulo(e.target.value)}
-                className="input-modal"
-              />
-              <textarea
-                value={novaDescricao}
-                onChange={(e) => setNovaDescricao(e.target.value)}
-                className="textarea-modal"
-              />
-              <div className="nota-detalhada-modal-actions">
-                <button className="btn btn-warning" onClick={handleSaveNota}>
-                  <FaEdit /> Salvar Edição
-                </button>
-                <button className="btn btn-danger" onClick={() => handleDeleteNota(notaDetalhada.id)}>
-                  <FaTrashAlt /> Excluir
-                </button>
-                <button className="btn btn-secondary" onClick={handleCloseNotaDetails}>
-                  Fechar
-                </button>
-              </div>
+            <div className="notes-modal-overlay" onClick={onClose}>
+                <div className="notes-modal-content" onClick={(e) => e.stopPropagation()}>
+                    <header className="notes-modal-header">
+                        <h2 className="notes-modal-title">Notas do Imóvel</h2>
+                        <button className="notes-modal-close-btn" onClick={onClose}>&times;</button>
+                    </header>
+                    <main className="notes-modal-body">
+                         {/* O restante do código do modal de notas permanece o mesmo */}
+                        <div className="notes-form-section">
+                            <h3 className="notes-section-title">{editingNotaId ? "Editando Nota" : "Adicionar Nova Nota"}</h3>
+                            <div className="notes-input-group">
+                                <input
+                                    type="text"
+                                    name="titulo"
+                                    placeholder="Título da nota"
+                                    value={formData.titulo}
+                                    onChange={handleInputChange}
+                                    className="notes-form-input"
+                                />
+                                <textarea
+                                    name="descricao"
+                                    placeholder="Descreva a nota aqui..."
+                                    value={formData.descricao}
+                                    onChange={handleInputChange}
+                                    className="notes-form-textarea"
+                                    rows="4"
+                                ></textarea>
+                            </div>
+                            <div className="notes-form-actions">
+                                {editingNotaId && (
+                                    <button onClick={handleCancelEdit} className="modal-btn-notes modal-btn-cancel-notes">
+                                        <FaTimes /> Cancelar Edição
+                                    </button>
+                                )}
+                                <button onClick={handleSaveNota} className="modal-btn-notes modal-btn-success-notes">
+                                    {editingNotaId ? <><FaEdit /> Atualizar Nota</> : <><FaPlus /> Adicionar Nota</>}
+                                </button>
+                            </div>
+                            {error && <p className="notes-error-message">{error}</p>}
+                        </div>
+
+                        <div className="notes-divider"></div>
+
+                        <div className="notes-table-section">
+                            <h3 className="notes-section-title">Notas Registradas</h3>
+                            {loading ? ( <p>Carregando notas...</p> ) : 
+                            notas.length === 0 ? ( <p className="notes-empty-message">Nenhuma nota registrada para este imóvel.</p> ) : 
+                            (
+                                <div className="notes-table-responsive">
+                                    <table className="notes-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Título</th>
+                                                <th>Descrição</th>
+                                                <th className="actions-column">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {notas.map((nota) => (
+                                                <tr key={nota.id}>
+                                                    <td>{nota.titulo}</td>
+                                                    <td className="description-cell"><p>{nota.descricao}</p></td>
+                                                    <td className="actions-column">
+                                                        <button onClick={() => handleEditClick(nota)} className="action-btn btn-edit" title="Editar">
+                                                            <FaEdit />
+                                                        </button>
+                                                        <button onClick={() => confirmDelete(nota.id)} className="action-btn btn-delete" title="Excluir">
+                                                            <FaTrashAlt />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+                    
+                    <footer className="notes-modal-footer">
+                        <button className="modal-btn-notes modal-btn-cancel-notes" onClick={onClose}>
+                            Fechar
+                        </button>
+                    </footer>
+                </div>
             </div>
-          </div>
-        )}
-      </div>
-    )
-  );
+        </>
+    );
 };
 
 export default NotasModal;

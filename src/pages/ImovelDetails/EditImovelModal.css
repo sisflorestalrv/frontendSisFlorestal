@@ -1,142 +1,171 @@
-.customModalEdit-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Fundo escurecido */
-    display: flex;
-    justify-content: center; /* Centraliza o conteúdo horizontalmente */
-    align-items: center; /* Centraliza o conteúdo verticalmente */
-    z-index: 9999; /* Coloca o modal sobre outros conteúdos */
+/* --- FUNDO E OVERLAY DO MODAL --- */
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 41, 59, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 }
 
-.customModalEdit-modal {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 800px; /* Largura máxima do modal */
-    max-height: 80vh; /* Altura máxima do modal (80% da altura da tela) */
-    overflow-y: auto; /* Habilita a rolagem vertical quando o conteúdo exceder a altura */
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Sombra para dar destaque */
-    display: flex;
-    flex-direction: column;
-    animation: fadeIn 0.3s ease-out; /* Animação para o modal aparecer */
+/* --- O CONTAINER BRANCO DO MODAL --- */
+.edit-modal-content {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.25);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh; /* Altura máxima que o modal pode ter */
+  display: flex; /* Essencial! */
+  flex-direction: column; /* Organiza header, body e footer */
+  overflow: hidden; /* Garante que os cantos arredondados funcionem */
 }
 
-.customModalEdit-title {
-    font-size: 1.8em;
-    margin-bottom: 20px;
-    text-align: center; /* Centraliza o título */
+/* --- CABEÇALHO (FIXO NO TOPO) --- */
+.edit-modal-header {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid #eef2f5;
+  flex-shrink: 0; /* Impede que o header encolha */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.customModalEdit-form-group {
-    margin-bottom: 15px;
+.edit-modal-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a2e35;
 }
 
-.customModalEdit-form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+/* --- ÁREA DO FORMULÁRIO (COM ROLAGEM) --- */
+.edit-modal-body {
+  flex-grow: 1; /* Faz o corpo esticar e ocupar o espaço disponível */
+  overflow-y: auto; /* A MÁGICA ACONTECE AQUI! */
+  padding: 2rem;
 }
 
-.customModalEdit-form-group input {
+/* --- RODAPÉ (FIXO NA BASE) --- */
+.edit-modal-footer {
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid #eef2f5;
+  background-color: #f8fafc;
+  flex-shrink: 0; /* Impede que o rodapé encolha */
+}
+
+/* O resto dos estilos (inputs, botões, etc.) permanecem os mesmos */
+
+.segmented-control {
+  display: flex;
+  background-color: #eef2f5;
+  border-radius: 10px;
+  padding: 5px;
+  max-width: 300px;
+  margin: 0 auto 2rem auto;
+}
+.segmented-control button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background-color: transparent;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.segmented-control button.active {
+  background-color: #ffffff;
+  color: #1e8449;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+.input-group.full-width {
+  grid-column: 1 / -1;
+}
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: all 0.3s ease;
+}
+.form-input:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.modal-btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.modal-btn-success {
+  background-color: #1e8449;
+  color: white;
+}
+.modal-btn-success:hover {
+  background-color: #196f3d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(30, 132, 73, 0.2);
+}
+.modal-btn-cancel {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+.modal-btn-cancel:hover {
+  background-color: #cbd5e1;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .edit-modal-header,
+  .edit-modal-body,
+  .edit-modal-footer {
+    padding: 1rem 1.25rem;
+  }
+  .edit-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .modal-btn {
     width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.customModalEdit-actions {
-    display: flex;
-    justify-content: flex-end; /* Alinha os botões na parte inferior direita */
-    margin-top: 20px;
-}
-
-.customModalEdit-actions button {
-    margin-left: 10px; /* Adiciona espaço entre os botões */
-}
-
-/* Botões estilos */
-.customModalEdit-btn-success {
-    background-color: #28a745;
-    color: white;
-    padding: 10px 20px;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.customModalEdit-btn-success:hover {
-    background-color: #218838; /* Cor do botão quando hover */
-}
-
-.customModalEdit-btn-danger {
-    background-color: #dc3545;
-    color: white;
-    padding: 10px 20px;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.customModalEdit-btn-danger:hover {
-    background-color: #c82333; /* Cor do botão quando hover */
-}
-
-/* Estilização básica para os botões */
-.customModalEdit-btn-secondary {
-    background-color: #28a745; /* Cor verde para o botão */
-    color: white;
-    padding: 10px 20px;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 1; /* Opacidade normal para o botão ativo */
-}
-
-.customModalEdit-btn-secondary:hover {
-    background-color: #218838; /* Cor verde mais escuro no hover */
-}
-
-/* Estilo para o botão ativo (selecionado) */
-.customModalEdit-btn-secondary.active {
-    background-color: #28a745; /* Verde normal */
-    font-size: 14px; /* Manter o tamanho normal */
-    opacity: 1; /* Opacidade normal para o botão ativo */
-}
-
-/* Estilo para os botões não ativos (não selecionados) */
-.customModalEdit-btn-secondary:not(.active) {
-    opacity: 0.6; /* Opacidade reduzida para o botão não selecionado */
-}
-
-.customModalEdit-close-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #000;
-}
-
-.customModalEdit-close-button:hover {
-    color: #ff0000; /* Cor quando o botão de fechar é hover */
-}
-
-/* Adiciona animação ao modal */
-@keyframes fadeIn {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
+  }
 }

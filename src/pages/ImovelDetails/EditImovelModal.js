@@ -4,19 +4,19 @@ import "./EditImovelModal.css";
 import { API_BASE_URL } from "../../config";
 
 const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
-  const [formData, setFormData] = useState(imovel);
-  const [isArrendado, setIsArrendado] = useState(!!imovel.arrendatario);
+  const [formData, setFormData] = useState(null);
+  const [isArrendado, setIsArrendado] = useState(false);
   const [codigoCCExists, setCodigoCCExists] = useState(false);
   const [popup, setPopup] = useState({ message: "", type: "" });
 
-  // Função para formatar a data no formato YYYY-MM-DD
   const formatDateForInput = (dateString) => {
-    if (!dateString) return ""; // Se não houver data, retorna vazio
+    if (!dateString) return "";
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return ""; // Verifica se a data é válida
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    if (isNaN(date.getTime())) return "";
+    
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
@@ -29,378 +29,170 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
         vencimento_contrato: formatDateForInput(imovel.vencimento_contrato),
       };
       setFormData(formattedImovel);
-      setIsArrendado(!!imovel.arrendatario);
+      setIsArrendado(!!imovel.arrendatario || !!imovel.data_contrato);
     }
   }, [imovel]);
 
-  const handleChange = async (e) => {
+  const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData((prevFormData) => ({ ...prevFormData, [id]: value }));
+    setFormData((prev) => ({ ...prev, [id]: value }));
 
     if (id === "codigo_cc") {
-      const exists = await checkCodigoCCExists(value);
-      setCodigoCCExists(exists);
+      checkCodigoCCExists(value);
     }
   };
 
   const checkCodigoCCExists = async (codigo_cc) => {
+    if (!codigo_cc || codigo_cc === imovel.codigo_cc) {
+      setCodigoCCExists(false);
+      return;
+    }
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`
-      );
+      const response = await fetch(`${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`);
       const data = await response.json();
-      return data.exists;
+      setCodigoCCExists(data.exists);
     } catch (error) {
       console.error("Erro ao verificar o código CC:", error);
-      return false;
     }
   };
 
   const toggleTipoImovel = (tipo) => {
-    setIsArrendado(tipo === "arrendado");
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      arrendatario: tipo === "arrendado" ? "" : null,
-      data_contrato: tipo === "arrendado" ? "" : null,
-      vencimento_contrato: tipo === "arrendado" ? "" : null,
-    }));
-  };
-
-  const isValidNumber = (num) => {
-    const regex = /^\d+(\.\d{1,2})?$/;
-    return regex.test(num);
+    const isArrendadoNovo = tipo === "arrendado";
+    setIsArrendado(isArrendadoNovo);
+    if (!isArrendadoNovo) {
+      setFormData((prev) => ({
+        ...prev,
+        arrendatario: "",
+        data_contrato: "",
+        vencimento_contrato: "",
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    // Validações
-    if (
-      formData.area_imovel <= 0 ||
-      formData.area_plantio <= 0 ||
-      formData.num_arvores_plantadas < 0 ||
-      formData.num_arvores_cortadas < 0 ||
-      formData.numero_car < 0
-    ) {
-      setPopup({ message: "Os valores não podem ser negativos ou zero!", type: "error" });
-      return;
+    if (codigoCCExists) {
+        setPopup({ message: "O Código CC informado já está em uso.", type: "error" });
+        return;
     }
-  
-    if (
-      !isValidNumber(formData.area_imovel) ||
-      !isValidNumber(formData.area_plantio) ||
-      !isValidNumber(formData.num_arvores_plantadas) ||
-      !isValidNumber(formData.num_arvores_cortadas)
-    ) {
-      setPopup({ message: "Os números devem estar no formato correto (ex: 100000.00).", type: "error" });
-      return;
-    }
-  
-    // Formatar datas antes de enviar (apenas a parte da data, sem tempo ou fuso horário)
+    
     const formattedData = {
       ...formData,
-      data_plantio: formData.data_plantio ? formData.data_plantio : null, // Já está no formato YYYY-MM-DD
-      data_contrato: isArrendado && formData.data_contrato ? formData.data_contrato : null, // Já está no formato YYYY-MM-DD
-      vencimento_contrato: isArrendado && formData.vencimento_contrato ? formData.vencimento_contrato : null, // Já está no formato YYYY-MM-DD
+      data_contrato: isArrendado && formData.data_contrato ? formData.data_contrato : null,
+      vencimento_contrato: isArrendado && formData.vencimento_contrato ? formData.vencimento_contrato : null,
+      arrendatario: isArrendado && formData.arrendatario ? formData.arrendatario : null,
     };
-  
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovel.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
       });
-  
+
       if (response.ok) {
         setPopup({ message: "Imóvel atualizado com sucesso!", type: "success" });
-        onSave(); // Atualizar a lista de imóveis ou recarregar os dados
-        setTimeout(() => onClose(), 1500); // Fechar o modal após 1,5 segundos
+        onSave();
+        setTimeout(() => onClose(), 1500);
       } else {
         const errorData = await response.json();
-        console.error("Erro ao atualizar o imóvel:", errorData);
         setPopup({ message: errorData.error || "Erro ao atualizar o imóvel.", type: "error" });
       }
     } catch (error) {
-      console.error("Erro ao atualizar o imóvel:", error);
-      setPopup({ message: "Erro ao atualizar o imóvel.", type: "error" });
+      console.error("Erro na requisição:", error);
+      setPopup({ message: "Erro de conexão ao tentar atualizar o imóvel.", type: "error" });
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !formData) return null;
 
   return (
-    <div className="customModalEdit-overlay">
-      <div className="customModalEdit-modal">
-        {/* Botão de fechar no canto superior direito */}
-        <button className="customModalEdit-close-button" onClick={onClose}>
-          &times;
-        </button>
+    <div className="edit-modal-overlay">
+      <div className="edit-modal-content">
 
-        <h2 className="customModalEdit-title">Editar Imóvel</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="text-center mb-4">
-            <button
-              type="button"
-              className={`customModalEdit-btn-secondary mx-2 ${!isArrendado ? "active" : ""}`}
-              onClick={() => toggleTipoImovel("proprio")}
-            >
-              Próprio
-            </button>
-            <button
-              type="button"
-              className={`customModalEdit-btn-secondary mx-2 ${isArrendado ? "active" : ""}`}
-              onClick={() => toggleTipoImovel("arrendado")}
-            >
-              Arrendado
-            </button>
-          </div>
+        <div className="edit-modal-header">
+          <h2 className="edit-modal-title">Editar Imóvel</h2>
+        </div>
 
-          <div className="customModalEdit-form-group">
-            <label htmlFor="descricao">Descrição</label>
-            <input
-              type="text"
-              className="form-control"
-              id="descricao"
-              value={formData.descricao || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        {/* Corpo do modal agora é o container de rolagem */}
+        <div className="edit-modal-body">
+          {/* O formulário fica aqui dentro */}
+          <form id="edit-imovel-form" onSubmit={handleSubmit}>
+            <div className="segmented-control">
+              <button type="button" className={!isArrendado ? "active" : ""} onClick={() => toggleTipoImovel("proprio")}>Próprio</button>
+              <button type="button" className={isArrendado ? "active" : ""} onClick={() => toggleTipoImovel("arrendado")}>Arrendado</button>
+            </div>
 
-          <div className="customModalEdit-form-group">
-            <label htmlFor="codigo_cc">Código CC</label>
-            <input
-              type="text"
-              className="form-control"
-              id="codigo_cc"
-              value={formData.codigo_cc || ""}
-              onChange={handleChange}
-              required
-            />
-            {codigoCCExists && <div className="text-danger">Código CC já existe</div>}
-          </div>
+            <div className="form-grid">
+              {[
+                { id: "descricao", label: "Descrição", required: true, className: "full-width" },
+                { id: "codigo_cc", label: "Código CC", required: true, error: codigoCCExists && "Código CC já existe." },
+                { id: "proprietario", label: "Proprietário", required: true },
+                { id: "matricula", label: "Matrícula" },
+                { id: "numero_car", label: "Número CAR" },
+                { id: "numero_ccir", label: "Número CCIR" },
+                { id: "numero_itr", label: "Número ITR" },
+                { id: "municipio", label: "Município", required: true },
+                { id: "localidade", label: "Localidade", required: true },
+                { id: "area_imovel", label: "Área do Imóvel (ha)", type: "number", step: "0.01", required: true },
+                { id: "area_plantio", label: "Área de Plantio (ha)", type: "number", step: "0.01", required: true },
+                { id: "especie", label: "Espécie" },
+                { id: "origem", label: "Origem" },
+                { id: "num_arvores_plantadas", label: "Nº de Árvores Plantadas", type: "number" },
+                { id: "num_arvores_cortadas", label: "Nº de Árvores Cortadas", type: "number" },
+                { id: "data_plantio", label: "Data de Plantio", type: "date" },
+              ].map(field => (
+                <div className={`input-group ${field.className || ''}`} key={field.id}>
+                  <label htmlFor={field.id} className="form-label">{field.label}</label>
+                  <input
+                    type={field.type || "text"}
+                    id={field.id}
+                    className="form-input"
+                    value={formData[field.id] || ""}
+                    onChange={handleChange}
+                    required={field.required}
+                    step={field.step}
+                  />
+                  {field.error && <div className="error-message">{field.error}</div>}
+                </div>
+              ))}
 
-          <div className="customModalEdit-form-group">
-            <label htmlFor="numero_car">Número CAR</label>
-            <input
-              type="text"
-              className="form-control"
-              id="numero_car"
-              value={formData.numero_car || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
+              {isArrendado && (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="arrendatario" className="form-label">Arrendatário</label>
+                    <input type="text" id="arrendatario" className="form-input" value={formData.arrendatario || ""} onChange={handleChange} />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="data_contrato" className="form-label">Data do Contrato</label>
+                    <input type="date" id="data_contrato" className="form-input" value={formData.data_contrato || ""} onChange={handleChange} />
+                  </div>
+                  <div className="input-group full-width">
+                    <label htmlFor="vencimento_contrato" className="form-label">Vencimento do Contrato</label>
+                    <input type="date" id="vencimento_contrato" className="form-input" value={formData.vencimento_contrato || ""} onChange={handleChange} />
+                  </div>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
 
-          <div className="customModalEdit-form-group">
-            <label htmlFor="area_imovel">Área do Imóvel</label>
-            <input
-              type="number"
-              className="form-control"
-              id="area_imovel"
-              value={formData.area_imovel || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        {/* Rodapé com os botões de ação */}
+        <div className="edit-modal-footer">
+          <button type="button" className="modal-btn modal-btn-cancel" onClick={onClose}>Cancelar</button>
+          
+          {/* Este botão aciona o form com id="edit-imovel-form" */}
+          <button 
+            type="submit" 
+            form="edit-imovel-form" 
+            className="modal-btn modal-btn-success"
+          >
+            Salvar Alterações
+          </button>
+        </div>
 
-          <div className="customModalEdit-form-group">
-            <label htmlFor="area_plantio">Área de Plantio</label>
-            <input
-              type="number"
-              className="form-control"
-              id="area_plantio"
-              value={formData.area_plantio || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="especie">Espécie</label>
-            <input
-              type="text"
-              className="form-control"
-              id="especie"
-              value={formData.especie || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="origem">Origem</label>
-            <input
-              type="text"
-              className="form-control"
-              id="origem"
-              value={formData.origem || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="num_arvores_plantadas">Número de Árvores Plantadas</label>
-            <input
-              type="number"
-              className="form-control"
-              id="num_arvores_plantadas"
-              value={formData.num_arvores_plantadas || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="num_arvores_cortadas">Número de Árvores Cortadas</label>
-            <input
-              type="number"
-              className="form-control"
-              id="num_arvores_cortadas"
-              value={formData.num_arvores_cortadas || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="matricula">Matrícula</label>
-            <input
-              type="text"
-              className="form-control"
-              id="matricula"
-              value={formData.matricula || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="data_plantio">Data de Plantio</label>
-            <input
-              type="date"
-              className="form-control"
-              id="data_plantio"
-              value={formData.data_plantio || ""}
-              onChange={handleChange}
-            />
-          </div>
-
-          {isArrendado && (
-            <>
-              <div className="customModalEdit-form-group">
-                <label htmlFor="vencimento_contrato">Vencimento do Contrato</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  id="vencimento_contrato"
-                  value={formData.vencimento_contrato || ""}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="customModalEdit-form-group">
-                <label htmlFor="arrendatario">Arrendatário</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="arrendatario"
-                  value={formData.arrendatario || ""}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="customModalEdit-form-group">
-                <label htmlFor="data_contrato">Data do Contrato</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  id="data_contrato"
-                  value={formData.data_contrato || ""}
-                  onChange={handleChange}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="numero_ccir">Número do CCIR</label>
-            <input
-              type="text"
-              className="form-control"
-              id="numero_ccir"
-              value={formData.numero_ccir || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="numero_itr">Número do ITR</label>
-            <input
-              type="text"
-              className="form-control"
-              id="numero_itr"
-              value={formData.numero_itr || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="proprietario">Proprietário</label>
-            <input
-              type="text"
-              className="form-control"
-              id="proprietario"
-              value={formData.proprietario || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="municipio">Município</label>
-            <input
-              type="text"
-              className="form-control"
-              id="municipio"
-              value={formData.municipio || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-form-group">
-            <label htmlFor="localidade">Localidade</label>
-            <input
-              type="text"
-              className="form-control"
-              id="localidade"
-              value={formData.localidade || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="customModalEdit-actions">
-            <button type="submit" className="customModalEdit-btn-success">
-              Salvar
-            </button>
-            <button type="button" className="customModalEdit-btn-danger" onClick={onClose}>
-              Cancelar
-            </button>
-          </div>
-        </form>
-
-        {/* PopupAlert */}
         {popup.message && (
-          <PopupAlert
-            message={popup.message}
-            type={popup.type}
-            onClose={() => setPopup({ message: "", type: "" })}
-          />
+          <PopupAlert message={popup.message} type={popup.type} onClose={() => setPopup({ message: "", type: "" })} />
         )}
       </div>
     </div>
