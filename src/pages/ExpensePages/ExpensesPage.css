@@ -1,72 +1,147 @@
-/* Estilo para a página de despesas */
+/* Define variáveis de cor para fácil customização */
+:root {
+  --primary-green: #4CAF50; /* Verde principal e mais vivo */
+  --primary-green-darker: #388E3C; /* Uma tonalidade mais escura para hover/ênfase */
+  --background-color: #f8f9fa; /* Fundo geral da página (cinza muito claro) */
+  --container-background: #FFFFFF; /* Fundo branco do container principal */
+  --text-color: #333; /* Cor do texto principal */
+  --border-color: #e9ecef; /* Cor da borda sutil */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Sombra padrão */
+}
+
+body {
+  background-color: var(--background-color);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 .expenses-container {
-    padding: 20px;
-    background-color: #f4f4f9;
-  }
-  
-  /* Título da página */
-  .expenses-title {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #2e8b57;  /* Verde */
-  }
-  
-  /* Barra de pesquisa */
-  .expenses-search-input {
-    padding: 12px;
-    font-size: 1rem;
-    border-radius: 5px;
-    border: 1px solid #28a745; /* Verde mais claro */
-  }
-  
-  .expenses-search-icon {
-    background-color: #28a745;
-    color: white;
-    padding: 12px;
-    border-radius: 5px;
-  }
-  
-  /* Tabela */
-  .expenses-table {
-    width: 100%;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
-  }
-  
-  .expenses-table th, .expenses-table td {
-    padding: 12px;
-    text-align: center;
-  }
-  
-  .expenses-table thead {
-    background-color: #34c759; /* Verde */
-    color: white;
-    font-weight: bold;
-  }
-  
-  .expenses-table tbody tr:nth-child(even) {
-    background-color: #f0f0f0;
-  }
-  
-  /* Botão de gerar PDF */
-  .expenses-generate-btn {
-    background-color: #34c759; /* Verde */
-    color: white;
-    padding: 10px 20px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .expenses-generate-btn:hover {
-    background-color: #28a745;
-  }
-  
-  .expenses-generate-btn:active {
-    background-color: #218838;
-  }
-  
+  background-color: var(--container-background);
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  max-width: 1200px;
+  margin: 40px auto;
+}
+
+/* Barra de ferramentas superior */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* --- NOVO ESTILO DE PESQUISA --- */
+.search-wrapper {
+  position: relative;
+  width: 50%; /* Ocupa metade da barra de ferramentas */
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 1rem;
+}
+
+.expenses-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px; /* Espaçamento interno para acomodar o ícone */
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: #fdfdfd;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.expenses-search-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-green) 15%, transparent);
+}
+
+/* Botão de gerar relatório */
+.expenses-generate-btn {
+  background-color: var(--primary-green);
+  color: white;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expenses-generate-btn:hover {
+  background-color: var(--primary-green-darker); /* Tom mais escuro para hover */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.expenses-generate-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Wrapper da tabela para overflow */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto; /* Garante que a tabela seja rolável em telas pequenas */
+}
+
+/* Tabela */
+.expenses-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.expenses-table th, .expenses-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.expenses-table td {
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.expenses-table thead th {
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--primary-green); /* Cabeçalho agora usa o verde mais vivo */
+}
+
+.expenses-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.expenses-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.expenses-table input[type="checkbox"] {
+  transform: scale(1.2);
+  accent-color: var(--primary-green); /* Checkbox agora usa o verde mais vivo */
+  cursor: pointer;
+}
+
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+
+.no-results {
+  padding: 40px;
+  color: #888;
+}

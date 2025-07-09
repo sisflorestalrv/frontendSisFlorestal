@@ -3,8 +3,8 @@ import { FaSearch, FaFilePdf } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import logo from '../../img/logo.png'; // Importe a logo do seu diretório
-import './ExpensesPage.css'; // Importe o CSS exclusivo para essa página
+import logo from '../../img/logo.png';
+import './ExpensesPage.css';
 
 const ExpensesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,155 +23,183 @@ const ExpensesPage = () => {
   };
 
   const filteredExpenses = expenses.filter((expense) =>
-    expense.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    (expense.descricao || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (expense.descricao_imovel || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (expense.fornecedor || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCheckboxChange = (expense) => {
-    if (selectedExpenses.includes(expense)) {
-      setSelectedExpenses(selectedExpenses.filter((item) => item.id !== expense.id));
-    } else {
-      setSelectedExpenses([...selectedExpenses, expense]);
-    }
+    setSelectedExpenses(prevSelected =>
+      prevSelected.find(item => item.id === expense.id)
+        ? prevSelected.filter(item => item.id !== expense.id)
+        : [...prevSelected, expense]
+    );
   };
   
-  // ✅ NOVA FUNÇÃO PARA FORMATAR MOEDA
   const formatCurrency = (value) => {
     const number = Number(value);
-    if (isNaN(number)) return "R$ 0,00"; // Retorno padrão caso o valor seja inválido
+    if (isNaN(number)) return "R$ 0,00";
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(number);
   };
 
-  const handleGeneratePDF = () => {
-    const doc = new jsPDF('landscape');
-    
-    const logoWidth = 50;
-    const logoHeight = 20;
-    const logoX = (doc.internal.pageSize.width - logoWidth) / 2;
-    const logoY = 10;
-    doc.addImage(logo, 'PNG', logoX, logoY, logoWidth, logoHeight);
-    
-    const title = `Relatório de Despesas ${selectedExpenses.length > 0 ? selectedExpenses[0].descricao_imovel : 'Sem Descrição'}`;
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-
- 
-    const titleX = (doc.internal.pageSize.width - logoWidth) / 2.6;
-    const titleY = logoY + logoHeight + 10;
-    
-    doc.text(title, titleX, titleY);
-    
-    const tableData = selectedExpenses.map((expense) => [
-      new Date(expense.data).toLocaleDateString('pt-BR'),
-      expense.descricao_imovel,
-      expense.descricao,
-      expense.produto,
-      expense.quantidade,
-      formatCurrency(expense.total), // ✅ ALTERAÇÃO AQUI
-      expense.fornecedor,
-      new Date(expense.validade).toLocaleDateString('pt-BR'),
-    ]);
-
-    doc.autoTable({
-      head: [['Data', 'Imóvel', 'Código CC', 'Produto', 'Quantidade', 'Valor total', 'Fornecedor', 'Vencimento']],
-      body: tableData,
-      startY: titleY + 20,
-      theme: 'grid',
-      styles: {
-        cellPadding: 3,
-        fontSize: 12,
-        font: "helvetica",
-        textColor: 0,
-        lineWidth: 0.1,
-        lineColor: [44, 62, 80],
-        halign: 'center',
-      },
-      headStyles: {
-        fillColor: [34, 139, 34], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [240, 240, 240],
-      },
-      margin: { top: 20 },
-    });
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.text("Relatório gerado por Sis Florestal", doc.internal.pageSize.width - 100, doc.internal.pageSize.height - 10);
-
-    doc.save('relatorio-despesas.pdf');
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    if (date instanceof Date && !isNaN(date)) {
+        return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    }
+    return 'Data inválida';
   };
 
-  const formatDate = (date) => {
-    const formattedDate = new Date(date);
-    return formattedDate instanceof Date && !isNaN(formattedDate)
-      ? formattedDate.toLocaleDateString('pt-BR')
-      : 'Data inválida';
+  const handleGeneratePDF = () => {
+    if (selectedExpenses.length === 0) {
+      alert("Por favor, selecione ao menos uma despesa para gerar o relatório.");
+      return;
+    }
+  
+    const doc = new jsPDF({ orientation: 'landscape' });
+  
+    // --- CABEÇALHO DO PDF ---
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+  
+    doc.addImage(logo, 'PNG', margin, margin, 40, 15);
+  
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor('#333333');
+    doc.text('Relatório de Despesas', pageWidth - margin, margin + 10, { align: 'right' });
+  
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor('#666666');
+    const propertyName = selectedExpenses[0]?.descricao_imovel || 'Diversos';
+    doc.text(`Imóvel: ${propertyName}`, pageWidth - margin, margin + 16, { align: 'right' });
+    
+    // --- TABELA DE DESPESAS ---
+    const tableData = selectedExpenses.map(expense => [
+      formatDate(expense.data),
+      expense.descricao_imovel,
+      expense.fornecedor,
+      expense.descricao,
+      parseInt(expense.quantidade, 10),
+      formatCurrency(expense.total),
+    ]);
+  
+    const totalValue = selectedExpenses.reduce((sum, expense) => sum + parseFloat(expense.total), 0);
+    tableData.push([
+      { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', textColor: '#333333'} },
+      { content: formatCurrency(totalValue), styles: { fontStyle: 'bold', textColor: '#333333' } },
+    ]);
+  
+    doc.autoTable({
+      head: [['Data', 'Imóvel', 'Fornecedor', 'Descrição', 'Qtd', 'Valor']],
+      body: tableData,
+      startY: 45,
+      theme: 'striped',
+      styles: {
+        font: 'Helvetica',
+        fontSize: 9,
+        cellPadding: 3.5,
+        overflow: 'linebreak',
+        halign: 'left',
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: '#4CAF50', // Usando o novo verde vivo
+        textColor: '#FFFFFF',
+        fontStyle: 'bold',
+        halign: 'left',
+      },
+      alternateRowStyles: {
+        fillColor: '#F8F9FA',
+      },
+      columnStyles: {
+        4: { halign: 'center' },
+        5: { halign: 'right' },
+      },
+      margin: { left: margin, right: margin },
+    });
+  
+    // --- RODAPÉ DO PDF ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor('#AAAAAA');
+      const footerText = `Relatório gerado por Sis Florestal em ${new Date().toLocaleDateString()} | Página ${i} de ${pageCount}`;
+      doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+  
+    doc.save(`relatorio_despesas_${propertyName.replace(/\s/g, '_')}.pdf`);
   };
 
   return (
-    <div className="expenses-container mt-4">
-      <h1 className="text-center expenses-title">Despesas Gerais</h1>
-      <div className="search-bar mt-4 d-flex justify-content-between align-items-center">
-        <div className="input-group">
+    <div className="expenses-container">
+      <div className="toolbar">
+        <div className="search-wrapper">
+          <FaSearch className="search-icon" />
           <input
             type="text"
-            className="form-control expenses-search-input"
-            placeholder="Pesquisar despesa..."
+            className="expenses-search-input"
+            placeholder="Pesquisar por imóvel, fornecedor ou descrição..."
             value={searchTerm}
             onChange={handleSearchChange}
           />
-          <span className="input-group-text expenses-search-icon">
-            <FaSearch />
-          </span>
         </div>
-      </div>
-      <table className="table expenses-table mt-4">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Data</th>
-            <th>Imóvel</th>
-            <th>Fornecedor</th>
-            <th>Descrição</th>
-            <th>Quantidade</th>
-            <th>Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredExpenses.length > 0 ? (
-            filteredExpenses.map((expense) => (
-              <tr key={expense.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedExpenses.includes(expense)}
-                    onChange={() => handleCheckboxChange(expense)}
-                  />
-                </td>
-                <td>{formatDate(expense.data)}</td>
-                <td>{expense.descricao_imovel}</td>
-                <td>{expense.fornecedor}</td> 
-                <td>{expense.descricao}</td>
-                <td>{parseInt(expense.quantidade, 10)}</td>
-                <td>{formatCurrency(expense.total)}</td> {/* ✅ ALTERAÇÃO AQUI */}
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" className="text-center">Nenhuma despesa encontrada.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      <div className="text-center mt-4">
-        <button className="btn expenses-generate-btn" onClick={handleGeneratePDF}>
-          <FaFilePdf /> Gerar Relatório 
+        <button 
+          className="expenses-generate-btn" 
+          onClick={handleGeneratePDF}
+          disabled={selectedExpenses.length === 0}
+        >
+          <FaFilePdf />
+          Gerar Relatório
         </button>
+      </div>
+
+      <div className="table-wrapper">
+        <table className="table expenses-table mt-4">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Data</th>
+              <th>Imóvel</th>
+              <th>Fornecedor</th>
+              <th>Descrição</th>
+              <th>Qtd</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredExpenses.length > 0 ? (
+              filteredExpenses.map((expense) => (
+                <tr key={expense.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedExpenses.some(item => item.id === expense.id)}
+                      onChange={() => handleCheckboxChange(expense)}
+                    />
+                  </td>
+                  <td>{formatDate(expense.data)}</td>
+                  <td>{expense.descricao_imovel}</td>
+                  <td>{expense.fornecedor}</td>
+                  <td>{expense.descricao}</td>
+                  <td className="text-center">{parseInt(expense.quantidade, 10)}</td>
+                  <td className="text-right">{formatCurrency(expense.total)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="text-center no-results">Nenhuma despesa encontrada.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
