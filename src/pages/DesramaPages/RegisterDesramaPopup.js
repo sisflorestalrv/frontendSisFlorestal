@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./RegisterDesramaPopup.css";
 import PopupAlert from "../PopupAlert";
+import { API_BASE_URL } from "../../config";
 
 const formatDate = (date) => {
   if (!date) return "";
@@ -36,7 +37,7 @@ const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/desramas/previsao`, {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsao`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ previsao: desrama.previsao }),
@@ -66,7 +67,7 @@ const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/desramas/${selectedPrevisao.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/desramas/${selectedPrevisao.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedDesrama),
@@ -87,7 +88,7 @@ const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
     setIsLoading(true); // Inicia o estado de carregamento
     try {
       // Realiza a requisição GET passando o imovelId
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/desramas/previsoes`);
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsoes`);
       
       if (!response.ok) throw new Error("Erro ao carregar previsões");
   

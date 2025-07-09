@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './DesbasteTablePopup.css';
+import { API_BASE_URL } from "../../config";
 
 const DesbasteTablePopup = ({ isOpen, onClose, imovelId }) => {
   const [desbasteData, setDesbasteData] = useState([]);
@@ -15,7 +16,7 @@ const DesbasteTablePopup = ({ isOpen, onClose, imovelId }) => {
   useEffect(() => {
     const fetchDesbastes = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/imoveis/${imovelId}/desbastes`);
+        const response = await axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes`);
         setDesbasteData(response.data);
       } catch (error) {
         console.error("Erro ao buscar desbastes:", error);
@@ -29,7 +30,7 @@ const DesbasteTablePopup = ({ isOpen, onClose, imovelId }) => {
 
   const handleDeleteDesbaste = async (desbasteId) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/api/imoveis/${imovelId}/desbastes/${desbasteId}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/${desbasteId}`);
       alert(response.data.message); // Exibe a mensagem de sucesso
       setDesbasteData(desbasteData.filter((desbaste) => desbaste.id !== desbasteId)); // Remove o desbaste da tabela
     } catch (error) {

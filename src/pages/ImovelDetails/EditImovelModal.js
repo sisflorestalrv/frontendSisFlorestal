@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PopupAlert from "../PopupAlert";
 import "./EditImovelModal.css";
+import { API_BASE_URL } from "../../config";
 
 const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
   const [formData, setFormData] = useState(imovel);
@@ -45,7 +46,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
   const checkCodigoCCExists = async (codigo_cc) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/verificarCodigoCC?codigo_cc=${codigo_cc}`
+        `${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`
       );
       const data = await response.json();
       return data.exists;
@@ -104,7 +105,7 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
     };
   
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovel.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovel.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

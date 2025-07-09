@@ -15,6 +15,7 @@ import FileModal from "../Arquivos/FilesModal"; // Importe o componente correto
 import EditImovelModal from "./EditImovelModal"; // Importe o modal de edição
 import InventoryModal from "../Inventario/InventoryModal"; // Ajuste o caminho conforme necessário
 import "../modal.css";
+import { API_BASE_URL } from "../../config";
 
 
 const ImovelDetails = () => {
@@ -65,7 +66,7 @@ const ImovelDetails = () => {
 
   const fetchImovelDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${id}`);
       if (!response.ok) throw new Error("Imóvel não encontrado");
       const data = await response.json();
       setImovel(data);
@@ -95,7 +96,7 @@ const ImovelDetails = () => {
     const fetchDesramas = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/imoveis/${id}/desramas`
+          `${API_BASE_URL}/api/imoveis/${id}/desramas`
         );
         const data = await response.json();
         setDesramaData(data); // Aqui, salve as desramas no estado

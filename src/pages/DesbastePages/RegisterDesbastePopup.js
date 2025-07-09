@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./RegisterDesbastePopup.css";
 import PopupAlert from "../PopupAlert";
+import { API_BASE_URL } from "../../config";
 
 const formatDate = (date) => {
   if (!date) return "";
@@ -64,7 +65,7 @@ const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
     };
   
     try {
-      const response = await fetch(`http://localhost:5000/api/desbastes/${selectedPrevisao.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/desbastes/${selectedPrevisao.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedDesbaste),
@@ -88,7 +89,7 @@ const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
     }
   
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/desbastes/previsao`, {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsao`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ previsao: desbaste.previsao }),
@@ -108,7 +109,7 @@ const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
   const fetchPrevisoes = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/desbastes/previsoes`);
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsoes`);
       if (!response.ok) throw new Error("Erro ao carregar previsões");
   
       const data = await response.json();

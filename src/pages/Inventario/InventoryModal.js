@@ -3,6 +3,7 @@
   import jsPDF from "jspdf";
   import "jspdf-autotable";
   import logo from '../../img/logo.png'; // Importe a logo do seu diretório
+  import { API_BASE_URL } from "../../config";
 
   const InventoryModal = ({ isOpen, onClose, imovelId }) => {
     const [inventoryData, setInventoryData] = useState({
@@ -37,7 +38,7 @@
       if (isOpen) {
         setLoading(true);
         setError(null);
-        fetch(`http://localhost:5000/api/imoveis/${imovelId}/inventario`)
+        fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`)
           .then((response) => {
             if (!response.ok) {
               throw new Error("Erro ao carregar inventários.");
@@ -67,7 +68,7 @@
     };
 
     const handleSave = () => {
-      fetch(`http://localhost:5000/api/imoveis/${imovelId}/inventario`, {
+      fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

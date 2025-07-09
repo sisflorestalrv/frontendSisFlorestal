@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './DesramaTablePopup.css';
+import { API_BASE_URL } from "../../config";
 
 const DesramaTablePopup = ({ isOpen, onClose, imovelId }) => {
   const [desramas, setDesramas] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
-      axios.get(`http://localhost:5000/api/imoveis/${imovelId}/desramas`)
+      axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas`)
         .then(response => {
           // Filtra registros com todos os campos não nulos
           const registrosCompletos = response.data.filter(desrama =>
@@ -24,7 +25,7 @@ const DesramaTablePopup = ({ isOpen, onClose, imovelId }) => {
   }, [isOpen, imovelId]);
 
   const handleDelete = (desramaId) => {
-    axios.delete(`http://localhost:5000/api/imoveis/${imovelId}/desramas/${desramaId}`)
+    axios.delete(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/${desramaId}`)
       .then(() => {
         setDesramas(desramas.filter(desrama => desrama.id !== desramaId));
         alert('Desrama excluída com sucesso!');

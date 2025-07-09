@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PopupAlert from '../PopupAlert'; // Importando o PopupAlert
 import "./GalleryModal.css"; // Importação do estilo CSS
+import { API_BASE_URL } from "../../config";
 
 const GalleryModal = ({ isOpen, onClose, imovelId }) => {
   const [images, setImages] = useState([]);
@@ -18,7 +19,7 @@ const GalleryModal = ({ isOpen, onClose, imovelId }) => {
   const fetchImages = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/imoveis/${imovelId}/imagens`
+        `${API_BASE_URL}/api/imoveis/${imovelId}/imagens`
       );
       if (!response.ok) {
         const error = await response.json();
@@ -47,7 +48,7 @@ const GalleryModal = ({ isOpen, onClose, imovelId }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/imoveis/${imovelId}/imagens`,
+        `${API_BASE_URL}/api/imoveis/${imovelId}/imagens`,
         {
           method: "POST",
           body: formData,
@@ -72,7 +73,7 @@ const GalleryModal = ({ isOpen, onClose, imovelId }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/imoveis/${imovelId}/imagens/${imageId}`,
+        `${API_BASE_URL}/api/imoveis/${imovelId}/imagens/${imageId}`,
         {
           method: "DELETE",
         }
@@ -130,7 +131,7 @@ const GalleryModal = ({ isOpen, onClose, imovelId }) => {
               images.map((image) => (
                 <div key={image.id} className="gallery-item">
                   <img
-                    src={`http://localhost:5000/${image.caminho}`}
+                    src={`${API_BASE_URL}/${image.caminho}`}
                     alt="Imagem do imóvel"
                     className="gallery-image"
                     onClick={() => setSelectedImage(image)}
@@ -159,7 +160,7 @@ const GalleryModal = ({ isOpen, onClose, imovelId }) => {
                   &times;
                 </button>
                 <img
-                  src={`http://localhost:5000/${selectedImage.caminho}`}
+                  src={`${API_BASE_URL}/${selectedImage.caminho}`}
                   alt="Imagem selecionada"
                   className="fullscreen-image"
                 />

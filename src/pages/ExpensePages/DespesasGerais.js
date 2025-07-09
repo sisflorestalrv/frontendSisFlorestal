@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from '../../img/logo.png';
 import './ExpensesPage.css';
+import { API_BASE_URL } from "../../config";
 
 const ExpensesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,7 +13,7 @@ const ExpensesPage = () => {
   const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/despesas')
+    fetch(`${API_BASE_URL}/api/despesas`)
       .then((response) => response.json())
       .then((data) => setExpenses(data))
       .catch((error) => console.error('Erro ao buscar despesas:', error));

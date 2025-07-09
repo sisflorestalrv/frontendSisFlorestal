@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios'; // Biblioteca para fazer requisições
 import { FiFile, FiTrash2 } from 'react-icons/fi'; // Ícones para arquivo
 import './FilesModal.css'; // Altere o nome da classe de CSS para "FilesModal.css"
+import { API_BASE_URL } from "../../config";
 
 const FilesModal = ({ isOpen, onClose, imovelId }) => {
   const [files, setFiles] = useState([]);
@@ -17,7 +18,7 @@ const FilesModal = ({ isOpen, onClose, imovelId }) => {
 
   const fetchFiles = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/imoveis/${imovelId}/arquivos`);
+      const response = await axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/arquivos`);
       setFiles(response.data); // Armazenar a lista de arquivos, incluindo os títulos
     } catch (error) {
       console.error("Erro ao carregar os arquivos:", error);
@@ -32,7 +33,7 @@ const FilesModal = ({ isOpen, onClose, imovelId }) => {
     formData.append("titulo", title); // Adicionar o título ao envio
 
     try {
-      await axios.post(`http://localhost:5000/api/imoveis/${imovelId}/arquivos`, formData);
+      await axios.post(`${API_BASE_URL}/api/imoveis/${imovelId}/arquivos`, formData);
       fetchFiles(); // Atualiza a lista de arquivos após upload
       setTitle(''); // Limpa o campo de título após o envio
       setFile(null); // Limpa o campo de arquivo após o envio
@@ -43,7 +44,7 @@ const FilesModal = ({ isOpen, onClose, imovelId }) => {
 
   const handleDeleteFile = async (fileId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/imoveis/${imovelId}/arquivos/${fileId}`);
+      await axios.delete(`${API_BASE_URL}:5000/api/imoveis/${imovelId}/arquivos/${fileId}`);
       fetchFiles(); // Atualiza a lista de arquivos após exclusão
     } catch (error) {
       console.error("Erro ao deletar o arquivo:", error);

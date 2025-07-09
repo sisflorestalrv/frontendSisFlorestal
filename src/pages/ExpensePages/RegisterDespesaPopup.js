@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './RegisterDespesaPopup.css';
 import PopupAlert from '../PopupAlert';  // Importando o PopupAlert
+import { API_BASE_URL } from "../../config";
 
 const RegisterDespesaPopup = ({ isOpen, onClose, imovelId }) => {
   const [despesa, setDespesa] = useState({
@@ -93,7 +94,7 @@ const RegisterDespesaPopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/despesas`, {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

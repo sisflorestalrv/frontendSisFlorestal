@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PopupAlert from '../PopupAlert'; // Assumindo que você tenha este componente
 import './CadastroImoveis.css'; // O CSS completo abaixo
 import { FaLandmark, FaTree, FaClipboardList, FaFileContract } from 'react-icons/fa';
+import { API_BASE_URL } from "../../config";
 
 const CadastroImoveis = () => {
   const initialState = {
@@ -38,7 +39,7 @@ const CadastroImoveis = () => {
   const checkCodigoCCExists = async (codigo_cc) => {
     if (!codigo_cc) return false;
     try {
-      const response = await fetch(`http://localhost:5000/api/verificarCodigoCC?codigo_cc=${codigo_cc}`);
+      const response = await fetch(`${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`);
       const data = await response.json();
       return data.exists;
     } catch (error) {
@@ -87,7 +88,7 @@ const CadastroImoveis = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/imoveis', {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formDataToSend),

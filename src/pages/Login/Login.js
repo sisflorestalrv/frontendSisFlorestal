@@ -5,6 +5,7 @@ import './Login.css';
 import logo from '../../img/logo.png';
 // Adicionamos um ícone de alerta para o card de erro
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
+import { API_BASE_URL } from "../../config";
 
 const Login = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -46,7 +47,7 @@ const Login = ({ onLoginSuccess }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', { username, password });
+      const response = await axios.post(`${API_BASE_URL}/api/login`, { username, password });
       onLoginSuccess();
       navigate('/');
     } catch (err) {

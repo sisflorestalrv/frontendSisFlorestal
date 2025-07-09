@@ -4,6 +4,7 @@ import 'jspdf-autotable';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './ExpenseTablePopup.css';
 import logo from '../../img/logo.png';
+import { API_BASE_URL } from "../../config";
 
 const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   const [despesas, setDespesas] = useState([]);
@@ -15,13 +16,13 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       // Fetching despesas
-      fetch(`http://localhost:5000/api/imoveis/${imovelId}/despesas`)
+      fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`)
         .then((res) => res.json())
         .then((data) => setDespesas(data))
         .catch((err) => console.error('Erro ao buscar despesas:', err));
 
       // Fetching imóvel details
-      fetch(`http://localhost:5000/api/imoveis/${imovelId}`)
+      fetch(`${API_BASE_URL}/api/imoveis/${imovelId}`)
         .then((res) => res.json())
         .then((data) => setImovel(data))
         .catch((err) => console.error('Erro ao buscar imóvel:', err));
@@ -29,7 +30,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   }, [isOpen, imovelId]);
   const handleDeleteDespesa = (despesaId) => {
     // Enviar requisição para deletar a despesa
-    fetch(`http://localhost:5000/api/despesas/${despesaId}`, {
+    fetch(`${API_BASE_URL}/api/despesas/${despesaId}`, {
       method: 'DELETE',
     })
       .then((response) => {

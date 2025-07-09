@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import './NotasModal.css'; // Importando o CSS
 import { FaEdit, FaTrashAlt } from 'react-icons/fa'; // Importando os ícones do react-icons
 import PopupAlert from '../PopupAlert'; // Importando o componente PopupAlert
+import { API_BASE_URL } from "../../config";
 
 const NotasModal = ({ isOpen, onClose, imovelId }) => {
   const [notas, setNotas] = useState([]);
@@ -13,7 +14,7 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
 
   const fetchNotas = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/imoveis/${imovelId}/notas`);
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`);
       const data = await response.json();
       setNotas(data);
     } catch (error) {
@@ -33,7 +34,7 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
     try {
       if (editingNotaId) {
         // Atualizando nota existente
-        await fetch(`http://localhost:5000/api/imoveis/${imovelId}/notas/${editingNotaId}`, {
+        await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${editingNotaId}`, {
           method: "PUT",
           body: JSON.stringify(notaData),
           headers: { "Content-Type": "application/json" },
@@ -41,7 +42,7 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
         setPopup({ message: "Nota atualizada com sucesso!", type: "success" });
       } else {
         // Criando nova nota
-        await fetch(`http://localhost:5000/api/imoveis/${imovelId}/notas`, {
+        await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`, {
           method: "POST",
           body: JSON.stringify(notaData),
           headers: { "Content-Type": "application/json" },
@@ -63,7 +64,7 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
 
   const handleDeleteNota = async (notaId) => {
     try {
-      await fetch(`http://localhost:5000/api/imoveis/${imovelId}/notas/${notaId}`, {
+      await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${notaId}`, {
         method: "DELETE",
       });
       setPopup({ message: "Nota excluída com sucesso!", type: "success" });

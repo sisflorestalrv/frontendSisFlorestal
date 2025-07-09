@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios'; // Biblioteca para fazer requisições
 import { FiFile, FiTrash2 } from 'react-icons/fi'; // Ícones para arquivo
 import './MapModal.css';
+import { API_BASE_URL } from "../../config";
 
 const MapModal = ({ isOpen, onClose, imovelId }) => {
   const [maps, setMaps] = useState([]);
@@ -17,7 +18,7 @@ const MapModal = ({ isOpen, onClose, imovelId }) => {
 
   const fetchMaps = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/imoveis/${imovelId}/mapas`);
+      const response = await axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/mapas`);
       setMaps(response.data); // Armazenar a lista de mapas, incluindo os títulos
     } catch (error) {
       console.error("Erro ao carregar os mapas:", error);
@@ -32,7 +33,7 @@ const MapModal = ({ isOpen, onClose, imovelId }) => {
     formData.append("titulo", title); // Adicionar o título ao envio
 
     try {
-      await axios.post(`http://localhost:5000/api/imoveis/${imovelId}/mapas`, formData);
+      await axios.post(`${API_BASE_URL}/api/imoveis/${imovelId}/mapas`, formData);
       fetchMaps(); // Atualiza a lista de mapas após upload
       setTitle(''); // Limpa o campo de título após o envio
       setMapFile(null); // Limpa o campo de arquivo após o envio
@@ -43,7 +44,7 @@ const MapModal = ({ isOpen, onClose, imovelId }) => {
 
   const handleDeleteMap = async (mapId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/imoveis/${imovelId}/mapas/${mapId}`);
+      await axios.delete(`${API_BASE_URL}/api/imoveis/${imovelId}/mapas/${mapId}`);
       fetchMaps(); // Atualiza a lista de mapas após exclusão
     } catch (error) {
       console.error("Erro ao deletar o mapa:", error);

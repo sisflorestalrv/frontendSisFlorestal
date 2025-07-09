@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from '../../img/logo.png';
 import './ViewImoveis.css';
+import { API_BASE_URL } from "../../config";
 
 const ViewImoveis = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,7 +54,7 @@ const ViewImoveis = () => {
 
   const fetchImoveis = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/imoveis');
+      const response = await fetch(`${API_BASE_URL}/api/imoveis`);
       const data = await response.json();
       setImoveis(data);
     } catch (error) {
@@ -79,7 +80,7 @@ const ViewImoveis = () => {
   const handleDelete = async () => {
     if (itemToDeleteId) {
       try {
-        await fetch(`http://localhost:5000/api/imoveis/${itemToDeleteId}`, { method: 'DELETE' });
+        await fetch(`${API_BASE_URL}/api/imoveis/${itemToDeleteId}`, { method: 'DELETE' });
         setImoveis(imoveis.filter((imovel) => imovel.id !== itemToDeleteId));
       } catch (error) {
         console.error('Erro ao excluir imóvel:', error);
