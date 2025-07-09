@@ -1,7 +1,7 @@
 /* Estilo principal do Footer */
 .app-footer {
-  background-color: #2c3e50; /* Um cinza-azulado escuro e moderno */
-  color: #bdc3c7; /* Um cinza claro para o texto, mais suave que o branco puro */
+  background-color: #f1f3f5; /* Um cinza-azulado escuro e moderno */
+  color: #3d3f41; /* Um cinza claro para o texto, mais suave que o branco puro */
   padding: 30px 40px; /* Espaçamento interno vertical e horizontal */
   font-size: 14px;
   border-top: 3px solid #4CAF50; /* Borda verde para conectar com a identidade visual do header */
@@ -28,7 +28,7 @@
 
 /* Estilo do link no footer */
 .footer-link {
-  color: #ecf0f1; /* Cor branca suave para o link, para dar destaque */
+  color: #171818; /* Cor branca suave para o link, para dar destaque */
   text-decoration: none;
   font-weight: 500;
   position: relative; /* Necessário para a animação do sublinhado */

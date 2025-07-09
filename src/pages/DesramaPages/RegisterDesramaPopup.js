@@ -1,204 +1,215 @@
-import React, { useState, useEffect } from "react";
-import "./RegisterDesramaPopup.css";
-import PopupAlert from "../PopupAlert";
+import React, { useState, useEffect, useCallback } from 'react';
+import './RegisterDesramaPopup.css';
 import { API_BASE_URL } from "../../config";
+import { FaCalendarPlus, FaEdit, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-const formatDate = (date) => {
-  if (!date) return "";
-  const parsedDate = new Date(date);
-  const day = String(parsedDate.getDate()).padStart(2, "0");
-  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-  const year = parsedDate.getFullYear();
-  return `${day}/${month}/${year}`;
-};
-
+const initialPrevisaoState = { previsao: '' };
+const initialFulfillmentState = { altura: '', numero: '', data: '' };
 
 const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
-  const [desrama, setDesrama] = useState({
-    altura: "",
-    numero: "",
-    data: "",
-    previsao: "",
-  });
+    const [previsoes, setPrevisoes] = useState([]);
+    const [previsaoData, setPrevisaoData] = useState(initialPrevisaoState);
+    const [fulfillmentData, setFulfillmentData] = useState(initialFulfillmentState);
 
-  const [selectedPrevisao, setSelectedPrevisao] = useState(null);
-  const [popup, setPopup] = useState({ message: "", type: "" });
-  const [previsoes, setPrevisoes] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+    const [selectedPrevisao, setSelectedPrevisao] = useState(null); // Controls which view is active
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-  const handleChange = (e) => {
-    setDesrama({ ...desrama, [e.target.name]: e.target.value });
-  };
-
-  const handlePrevisaoSubmit = async () => {
-    if (!desrama.previsao) {
-      setPopup({ message: "O campo 'previsão' é obrigatório!", type: "error" });
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsao`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ previsao: desrama.previsao }),
-      });
-
-      if (!response.ok) throw new Error("Erro ao registrar previsão");
-
-      setPopup({ message: "Previsão registrada com sucesso!", type: "success" });
-      setDesrama({ ...desrama, previsao: "" });
-      fetchPrevisoes();
-    } catch (error) {
-      console.error(error);
-      setPopup({ message: "Erro ao registrar previsão", type: "error" });
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!desrama.altura || !desrama.numero || !desrama.data) {
-      setPopup({ message: "Todos os campos são obrigatórios!", type: "error" });
-      return;
-    }
-
-    const formattedDesrama = {
-      altura: desrama.altura.replace(",", "."),
-      numero: desrama.numero,
-      data: desrama.data,
+    const formatDate = (dateString) => {
+        return dateString ? new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : "N/A";
     };
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/desramas/${selectedPrevisao.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formattedDesrama),
-      });
+    const fetchPrevisoes = useCallback(async () => {
+        if (!imovelId) return;
+        setIsLoading(true);
+        setError('');
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsoes`);
+            if (!response.ok) throw new Error("Erro ao carregar previsões pendentes.");
+            const data = await response.json();
+            setPrevisoes(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [imovelId]);
 
-      if (!response.ok) throw new Error("Erro ao atualizar desrama");
+    useEffect(() => {
+        if (isOpen) {
+            fetchPrevisoes();
+        } else {
+            // Reset all states on close
+            setTimeout(() => {
+                setPrevisoes([]);
+                setPrevisaoData(initialPrevisaoState);
+                setFulfillmentData(initialFulfillmentState);
+                setSelectedPrevisao(null);
+                setError('');
+                setSuccess('');
+            }, 300);
+        }
+    }, [isOpen, fetchPrevisoes]);
 
-      setPopup({ message: "Desrama atualizada com sucesso!", type: "success" });
-      setSelectedPrevisao(null);
-      fetchPrevisoes();
-    } catch (error) {
-      console.error(error);
-      setPopup({ message: "Falha ao atualizar desrama", type: "error" });
-    }
-  };
+    const handlePrevisaoChange = (e) => setPrevisaoData({ ...previsaoData, [e.target.name]: e.target.value });
+    const handleFulfillmentChange = (e) => setFulfillmentData({ ...fulfillmentData, [e.target.name]: e.target.value });
 
-  const fetchPrevisoes = async (imovelId) => {
-    setIsLoading(true); // Inicia o estado de carregamento
-    try {
-      // Realiza a requisição GET passando o imovelId
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsoes`);
-      
-      if (!response.ok) throw new Error("Erro ao carregar previsões");
-  
-      // Converte a resposta para JSON
-      const data = await response.json();
-      setPrevisoes(data); // Atualiza o estado das previsões
-    } catch (error) {
-      console.error(error); // Registra o erro no console
-    } finally {
-      setIsLoading(false); // Finaliza o carregamento
-    }
-  };
-  
-  useEffect(() => {
-  if (isOpen && imovelId) fetchPrevisoes(imovelId); // Chama a função com o ID do imóvel
-}, [isOpen, imovelId]); // A função é chamada quando `isOpen` ou `imovelId` muda
+    const handlePrevisaoSubmit = async (e) => {
+        e.preventDefault();
+        if (!previsaoData.previsao) {
+            setError("O campo 'previsão' é obrigatório!");
+            return;
+        }
+        setIsSubmitting(true);
+        setError(''); setSuccess('');
+        try {
+            await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsao`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(previsaoData),
+            });
+            setSuccess("Previsão registrada com sucesso!");
+            setPrevisaoData(initialPrevisaoState);
+            fetchPrevisoes();
+        } catch (err) {
+            setError("Erro ao registrar a previsão.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
+    const handleFulfillmentSubmit = async (e) => {
+        e.preventDefault();
+        const { altura, numero, data } = fulfillmentData;
+        if (!altura || !numero || !data) {
+            setError("Todos os campos (altura, número e data) são obrigatórios!");
+            return;
+        }
+        
+        setIsSubmitting(true);
+        setError(''); setSuccess('');
+        try {
+            const formattedData = { ...fulfillmentData, altura: altura.replace(",", ".") };
+            await fetch(`${API_BASE_URL}/api/desramas/${selectedPrevisao.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formattedData),
+            });
+            setSuccess("Desrama registrada com sucesso na previsão!");
+            setSelectedPrevisao(null); // Volta para a tela principal
+            fetchPrevisoes();
+        } catch (err) {
+            setError("Falha ao registrar a desrama.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  return (
-    <div className="desrama-popup-overlay">
-      <div className="desrama-popup-container">
-        <h2 className="desrama-popup-title">Registrar Desrama</h2>
+    const renderMainView = () => (
+        <>
+            <form onSubmit={handlePrevisaoSubmit}>
+                <section className="register-desrama-section">
+                    <h3 className="register-desrama-section-title">Adicionar Nova Previsão de Desrama</h3>
+                    <div className="previsao-form-group">
+                        <input
+                            type="date"
+                            name="previsao"
+                            value={previsaoData.previsao}
+                            onChange={handlePrevisaoChange}
+                            className="form-input"
+                        />
+                        <button type="submit" className="modal-btn btn-secondary" disabled={isSubmitting}>
+                            <FaCalendarPlus /> {isSubmitting ? 'Registrando...' : 'Registrar Previsão'}
+                        </button>
+                    </div>
+                </section>
+            </form>
+            <div className="register-desrama-divider"></div>
+            <section className="register-desrama-section">
+                <h3 className="register-desrama-section-title">Previsões Pendentes</h3>
+                <div className="previsoes-list-container">
+                    {isLoading ? <p>Carregando...</p> :
+                     previsoes.length === 0 ? <p className="empty-message">Nenhuma previsão pendente.</p> :
+                     (
+                        <ul className="previsoes-list">
+                            {previsoes.map((prev) => (
+                                <li key={prev.id} className="previsao-item">
+                                    <span>{formatDate(prev.previsao)}</span>
+                                    <button onClick={() => setSelectedPrevisao(prev)} className="modal-btn btn-success">
+                                        <FaEdit /> Registrar Desrama
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                     )
+                    }
+                </div>
+            </section>
+        </>
+    );
 
-        <div className="desrama-popup-form-group">
-          <label>Previsão:</label>
-          <input
-            type="date"
-            name="previsao"
-            value={desrama.previsao}
-            onChange={handleChange}
-            className="desrama-popup-input"
-          />
+    const renderFulfillmentView = () => (
+        <form onSubmit={handleFulfillmentSubmit}>
+            <section className="register-desrama-section">
+                <h3 className="register-desrama-section-title">
+                    Registrando Desrama para {formatDate(selectedPrevisao.previsao)}
+                </h3>
+                <div className="form-grid">
+                    <div className="input-group">
+                        <label htmlFor="altura" className="form-label">Altura (m)</label>
+                        <input id="altura" name="altura" type="text" value={fulfillmentData.altura} onChange={handleFulfillmentChange} className="form-input" placeholder="Ex: 5,50"/>
+                    </div>
+                    <div className="input-group">
+                        <label htmlFor="numero" className="form-label">Número</label>
+                        <input id="numero" name="numero" type="number" value={fulfillmentData.numero} onChange={handleFulfillmentChange} className="form-input" />
+                    </div>
+                    <div className="input-group full-width">
+                        <label htmlFor="data" className="form-label">Data da Execução</label>
+                        <input id="data" name="data" type="date" value={fulfillmentData.data} onChange={handleFulfillmentChange} className="form-input" />
+                    </div>
+                </div>
+            </section>
+        </form>
+    );
+
+    return (
+        <div className="register-desrama-overlay" onClick={onClose}>
+            <div className="register-desrama-content" onClick={(e) => e.stopPropagation()}>
+                <header className="register-desrama-header">
+                    <h2 className="register-desrama-title">Registrar Desrama</h2>
+                    <button className="register-desrama-close-btn" onClick={onClose}>&times;</button>
+                </header>
+
+                <main className="register-desrama-body">
+                    {error && <div className="feedback-message error-message">{error}</div>}
+                    {success && <div className="feedback-message success-message">{success}</div>}
+                    {selectedPrevisao ? renderFulfillmentView() : renderMainView()}
+                </main>
+                
+                <footer className="register-desrama-footer">
+                    {selectedPrevisao ? (
+                        <>
+                            <button type="button" className="modal-btn btn-cancel" onClick={() => setSelectedPrevisao(null)}>
+                                <FaArrowLeft /> Voltar
+                            </button>
+                            <button type="button" className="modal-btn btn-success" onClick={handleFulfillmentSubmit} disabled={isSubmitting}>
+                                <FaEdit /> {isSubmitting ? 'Salvando...' : 'Salvar Desrama'}
+                            </button>
+                        </>
+                    ) : (
+                        <button type="button" className="modal-btn btn-cancel" onClick={onClose}>
+                            <FaTimes /> Fechar
+                        </button>
+                    )}
+                </footer>
+            </div>
         </div>
-
-        <button onClick={handlePrevisaoSubmit} className="btn btn-secondary">
-          Registrar Previsão
-        </button>
-
-        <hr />
-
-        <h3>Previsões Pendentes</h3>
-        {isLoading ? (
-          <p>Carregando previsões...</p>
-        ) : previsoes.length === 0 ? (
-          <p>Nenhuma previsão pendente.</p>
-        ) : (
-          <ul className="previsoes-list">
-            {previsoes.map((prev) => (
-              <li key={prev.id} className="previsao-item">
-                <span>{formatDate(prev.previsao)}</span>
-                <button onClick={() => setSelectedPrevisao(prev)} className="btn btn-primary">
-                  Registrar Desrama
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <button onClick={onClose} className="btn btn-danger">
-          Fechar
-        </button>
-      </div>
-
-      {selectedPrevisao && (
-        <div className="edit-popup">
-          <h2>Editar Previsão</h2>
-          <div className="desrama-popup-form-group">
-            <label>Altura:</label>
-            <input
-              type="text"
-              name="altura"
-              value={desrama.altura}
-              onChange={handleChange}
-              className="desrama-popup-input"
-            />
-          </div>
-          <div className="desrama-popup-form-group">
-            <label>Número:</label>
-            <input
-              type="number"
-              name="numero"
-              value={desrama.numero}
-              onChange={handleChange}
-              className="desrama-popup-input"
-            />
-          </div>
-          <div className="desrama-popup-form-group">
-            <label>Data:</label>
-            <input
-              type="date"
-              name="data"
-              value={desrama.data}
-              onChange={handleChange}
-              className="desrama-popup-input"
-            />
-          </div>
-          <button onClick={handleSubmit} className="btn btn-success">
-            Atualizar
-          </button>
-          <button onClick={() => setSelectedPrevisao(null)} className="btn btn-danger">
-            Cancelar
-          </button>
-        </div>
-      )}
-
-      {popup.message && <PopupAlert message={popup.message} type={popup.type} onClose={() => setPopup({ message: "", type: "" })} />}
-    </div>
-  );
+    );
 };
 
 export default RegisterDesramaPopup;

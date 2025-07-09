@@ -1,359 +1,222 @@
-import React, { useState, useEffect } from "react";
-import "./RegisterDesbastePopup.css";
-import PopupAlert from "../PopupAlert";
+import React, { useState, useEffect, useCallback } from 'react';
+import './RegisterDesbastePopup.css';
 import { API_BASE_URL } from "../../config";
+import { FaCalendarPlus, FaEdit, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-const formatDate = (date) => {
-  if (!date) return "";
-  const parsedDate = new Date(date);
-  const day = String(parsedDate.getDate()).padStart(2, "0");
-  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-  const year = parsedDate.getFullYear();
-  return `${day}/${month}/${year}`;
+const initialFulfillmentState = {
+    numero: "", data: "", arvores_cortadas: "", lenha: "", toretes: "",
+    toras_20_25cm: "", toras_25_33cm: "", toras_acima_33cm: "", preco_lenha: "",
+    preco_toretes: "", preco_toras_20_25cm: "", preco_toras_25_33cm: "",
+    preco_toras_acima_33cm: "", valor_extracao: "",
 };
 
 const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
-  const [desbaste, setDesbaste] = useState({
-    numero: "",
-    data: "",
-    arvores_cortadas: "",
-    lenha: "",
-    toretes: "",
-    toras_20_25cm: "",
-    toras_25_33cm: "",
-    toras_acima_33cm: "",
-    preco_lenha: "",
-    preco_toretes: "",
-    preco_toras_20_25cm: "",
-    preco_toras_25_33cm: "",
-    preco_toras_acima_33cm: "",
-    valor_extracao: "",
-    previsao: "",
-  });
+    const [previsoes, setPrevisoes] = useState([]);
+    const [previsaoDate, setPrevisaoDate] = useState('');
+    const [fulfillmentData, setFulfillmentData] = useState(initialFulfillmentState);
+    const [selectedPrevisao, setSelectedPrevisao] = useState(null);
+    
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-  const [selectedPrevisao, setSelectedPrevisao] = useState(null);
-  const [popup, setPopup] = useState({ message: "", type: "" });
-  const [previsoes, setPrevisoes] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setDesbaste({ ...desbaste, [e.target.name]: e.target.value });
-  };
-
-  
-  const handleSubmit = async () => {
-    if (!desbaste.numero || !desbaste.data || !desbaste.arvores_cortadas) {
-      setPopup({ message: "Todos os campos são obrigatórios!", type: "error" });
-      return;
-    }
-  
-    const formattedDesbaste = {
-      numero: desbaste.numero,
-      data: desbaste.data,
-      arvores_cortadas: desbaste.arvores_cortadas,
-      lenha: desbaste.lenha,
-      toretes: desbaste.toretes,
-      toras_20_25cm: desbaste.toras_20_25cm,
-      toras_25_33cm: desbaste.toras_25_33cm,
-      toras_acima_33cm: desbaste.toras_acima_33cm,
-      preco_lenha: desbaste.preco_lenha,
-      preco_toretes: desbaste.preco_toretes,
-      preco_toras_20_25cm: desbaste.preco_toras_20_25cm,
-      preco_toras_25_33cm: desbaste.preco_toras_25_33cm,
-      preco_toras_acima_33cm: desbaste.preco_toras_acima_33cm,
-      valor_extracao: desbaste.valor_extracao,
+    const formatDate = (dateString) => {
+        return dateString ? new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : "N/A";
     };
-  
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/desbastes/${selectedPrevisao.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formattedDesbaste),
-      });
-  
-      if (!response.ok) throw new Error("Erro ao atualizar desbaste");
-  
-      setPopup({ message: "Desbaste atualizado com sucesso!", type: "success" });
-      setSelectedPrevisao(null); // Garantir que a previsão seja desmarcada após a edição
-      fetchPrevisoes(); // Atualiza as previsões imediatamente após editar
-    } catch (error) {
-      console.error(error);
-      setPopup({ message: "Falha ao atualizar desbaste", type: "error" });
-    }
-  };
-  
-  const handlePrevisaoSubmit = async () => {
-    if (!desbaste.previsao) {
-      setPopup({ message: "O campo 'previsão' é obrigatório!", type: "error" });
-      return;
-    }
-  
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsao`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ previsao: desbaste.previsao }),
-      });
-  
-      if (!response.ok) throw new Error("Erro ao registrar previsão");
-  
-      setPopup({ message: "Previsão de desbaste registrada com sucesso!", type: "success" });
-      setDesbaste({ ...desbaste, previsao: "" });
-      fetchPrevisoes(); // Atualiza previsões após adicionar uma nova
-    } catch (error) {
-      console.error(error);
-      setPopup({ message: "Erro ao registrar previsão", type: "error" });
-    }
-  };
-  
-  const fetchPrevisoes = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsoes`);
-      if (!response.ok) throw new Error("Erro ao carregar previsões");
-  
-      const data = await response.json();
-      setPrevisoes(data); // Atualiza o estado das previsões
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
 
-  useEffect(() => {
-    if (selectedPrevisao) {
-      setDesbaste({
-        numero: selectedPrevisao.numero,
-        data: selectedPrevisao.data,
-        arvores_cortadas: selectedPrevisao.arvores_cortadas,
-        lenha: selectedPrevisao.lenha,
-        toretes: selectedPrevisao.toretes,
-        toras_20_25cm: selectedPrevisao.toras_20_25cm,
-        toras_25_33cm: selectedPrevisao.toras_25_33cm,
-        toras_acima_33cm: selectedPrevisao.toras_acima_33cm,
-        preco_lenha: selectedPrevisao.preco_lenha,
-        preco_toretes: selectedPrevisao.preco_toretes,
-        preco_toras_20_25cm: selectedPrevisao.preco_toras_20_25cm,
-        preco_toras_25_33cm: selectedPrevisao.preco_toras_25_33cm,
-        preco_toras_acima_33cm: selectedPrevisao.preco_toras_acima_33cm,
-        valor_extracao: selectedPrevisao.valor_extracao,
-      });
-    }
-  }, [selectedPrevisao]);
-  
+    const fetchPrevisoes = useCallback(async () => {
+        if (!imovelId) return;
+        setIsLoading(true);
+        setError('');
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsoes`);
+            if (!response.ok) throw new Error("Erro ao carregar previsões pendentes.");
+            const data = await response.json();
+            setPrevisoes(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [imovelId]);
 
+    useEffect(() => {
+        if (isOpen) {
+            fetchPrevisoes();
+        } else {
+            setTimeout(() => {
+                setPrevisoes([]);
+                setPrevisaoDate('');
+                setFulfillmentData(initialFulfillmentState);
+                setSelectedPrevisao(null);
+                setError('');
+                setSuccess('');
+            }, 300);
+        }
+    }, [isOpen, fetchPrevisoes]);
 
-   // Fechar o popup após uma ação (Ex: após sucesso ou erro)
-   const closePopupAlert = () => {
-    setPopup({ message: "", type: "" });
-  };
+    // Popula o formulário de preenchimento quando uma previsão é selecionada
+    useEffect(() => {
+        if (selectedPrevisao) {
+            const dataToSet = {};
+            for (const key in initialFulfillmentState) {
+                dataToSet[key] = selectedPrevisao[key] || ''; // Garante que todos os campos sejam preenchidos
+            }
+            setFulfillmentData(dataToSet);
+        }
+    }, [selectedPrevisao]);
 
-  if (!isOpen) return null;
+    const handleFulfillmentChange = (e) => setFulfillmentData({ ...fulfillmentData, [e.target.name]: e.target.value });
 
-  return (
-    <div className="desbaste-popup-overlay">
-      <div className="desbaste-popup-container">
-        <h2 className="desbaste-popup-title">Registrar Previsão de Desbaste</h2>
+    const handlePrevisaoSubmit = async (e) => {
+        e.preventDefault();
+        if (!previsaoDate) {
+            setError("O campo 'previsão' é obrigatório!");
+            return;
+        }
+        setIsSubmitting(true);
+        setError(''); setSuccess('');
+        try {
+            await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsao`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ previsao: previsaoDate }),
+            });
+            setSuccess("Previsão de desbaste registrada com sucesso!");
+            setPrevisaoDate('');
+            fetchPrevisoes();
+        } catch (err) {
+            setError("Erro ao registrar a previsão.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-        <div className="desbaste-popup-form-group">
-          <label>Previsão:</label>
-          <input
-            type="date"
-            name="previsao"
-            value={desbaste.previsao}
-            onChange={handleChange}
-            className="desbaste-popup-input"
-          />
+    const handleFulfillmentSubmit = async (e) => {
+        e.preventDefault();
+        if (!fulfillmentData.numero || !fulfillmentData.data || !fulfillmentData.arvores_cortadas) {
+            setError("Os campos Número, Data e Árvores Cortadas são obrigatórios!");
+            return;
+        }
+        
+        setIsSubmitting(true);
+        setError(''); setSuccess('');
+        try {
+            await fetch(`${API_BASE_URL}/api/desbastes/${selectedPrevisao.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(fulfillmentData),
+            });
+            setSuccess("Desbaste registrado com sucesso na previsão!");
+            setSelectedPrevisao(null);
+            fetchPrevisoes();
+        } catch (err) {
+            setError("Falha ao registrar o desbaste.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    const renderMainView = () => (
+        <>
+            <form onSubmit={handlePrevisaoSubmit}>
+                <section className="register-desbaste-section">
+                    <h3 className="register-desbaste-section-title">Adicionar Nova Previsão de Desbaste</h3>
+                    <div className="previsao-form-group">
+                        <input
+                            type="date"
+                            name="previsao"
+                            value={previsaoDate}
+                            onChange={(e) => setPrevisaoDate(e.target.value)}
+                            className="form-input"
+                        />
+                        <button type="submit" className="modal-btn btn-secondary" disabled={isSubmitting}>
+                            <FaCalendarPlus /> {isSubmitting ? 'Registrando...' : 'Registrar Previsão'}
+                        </button>
+                    </div>
+                </section>
+            </form>
+            <div className="register-desbaste-divider"></div>
+            <section className="register-desbaste-section">
+                <h3 className="register-desbaste-section-title">Previsões Pendentes</h3>
+                <div className="previsoes-list-container">
+                    {isLoading ? <p>Carregando...</p> :
+                     previsoes.length === 0 ? <p className="empty-message">Nenhuma previsão pendente.</p> :
+                     (
+                        <ul className="previsoes-list">
+                            {previsoes.map((prev) => (
+                                <li key={prev.id} className="previsao-item">
+                                    <span>{formatDate(prev.previsao)}</span>
+                                    <button onClick={() => setSelectedPrevisao(prev)} className="modal-btn btn-success">
+                                        <FaEdit /> Registrar Desbaste
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                     )
+                    }
+                </div>
+            </section>
+        </>
+    );
+
+    const renderFulfillmentView = () => (
+        <form onSubmit={handleFulfillmentSubmit}>
+            <section className="register-desbaste-section">
+                <h3 className="register-desbaste-section-title">
+                    Registrando Desbaste para {formatDate(selectedPrevisao.previsao)}
+                </h3>
+                <div className="form-grid">
+                    {Object.keys(initialFulfillmentState).map(key => {
+                        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        return (
+                            <div key={key} className="input-group">
+                                <label htmlFor={key} className="form-label">{label}</label>
+                                <input id={key} name={key} type={key === 'data' ? 'date' : 'number'} value={fulfillmentData[key]} onChange={handleFulfillmentChange} className="form-input" step="0.01"/>
+                            </div>
+                        )
+                    })}
+                </div>
+            </section>
+        </form>
+    );
+
+    return (
+        <div className="register-desbaste-overlay" onClick={onClose}>
+            <div className="register-desbaste-content" onClick={(e) => e.stopPropagation()}>
+                <header className="register-desbaste-header">
+                    <h2 className="register-desbaste-title">Registrar Desbaste</h2>
+                    <button className="register-desbaste-close-btn" onClick={onClose}>&times;</button>
+                </header>
+
+                <main className="register-desbaste-body">
+                    {error && <div className="feedback-message error-message">{error}</div>}
+                    {success && <div className="feedback-message success-message">{success}</div>}
+                    {selectedPrevisao ? renderFulfillmentView() : renderMainView()}
+                </main>
+                
+                <footer className="register-desbaste-footer">
+                    {selectedPrevisao ? (
+                        <>
+                            <button type="button" className="modal-btn btn-cancel" onClick={() => setSelectedPrevisao(null)}>
+                                <FaArrowLeft /> Voltar
+                            </button>
+                            <button type="button" className="modal-btn btn-success" onClick={handleFulfillmentSubmit} disabled={isSubmitting}>
+                                <FaEdit /> {isSubmitting ? 'Salvando...' : 'Salvar Desbaste'}
+                            </button>
+                        </>
+                    ) : (
+                        <button type="button" className="modal-btn btn-cancel" onClick={onClose}>
+                            <FaTimes /> Fechar
+                        </button>
+                    )}
+                </footer>
+            </div>
         </div>
-
-        <button onClick={handlePrevisaoSubmit} className="btn btn-secondary">
-          Registrar Previsão
-        </button>
-
-        <hr />
-
-        <h3>Previsões Pendentes</h3>
-        {isLoading ? (
-          <p>Carregando previsões...</p>
-        ) : previsoes.length === 0 ? (
-          <p>Nenhuma previsão pendente.</p>
-        ) : (
-          <ul className="previsoes-list">
-            {previsoes.map((prev) => (
-              <li key={prev.id} className="previsao-item">
-                <span>{formatDate(prev.previsao)}</span>
-                <button onClick={() => setSelectedPrevisao(prev)} className="btn btn-primary">
-  Editar Desbaste
-</button>
-
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <button onClick={onClose} className="btn btn-danger">
-          Fechar
-        </button>
-      </div>
-
-      {selectedPrevisao && (
-        <div className="edit-popup">
-          <h2>Editar Previsão de Desbaste</h2>
-          <div className="desbaste-popup-form-group">
-            <label>Número:</label>
-            <input
-              type="number"
-              name="numero"
-              value={desbaste.numero}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Data:</label>
-            <input
-              type="date"
-              name="data"
-              value={desbaste.data}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Árvores Cortadas:</label>
-            <input
-              type="number"
-              name="arvores_cortadas"
-              value={desbaste.arvores_cortadas}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          {/* Campos restantes */}
-          <div className="desbaste-popup-form-group">
-            <label>Lenha:</label>
-            <input
-              type="number"
-              name="lenha"
-              value={desbaste.lenha}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Toretes:</label>
-            <input
-              type="number"
-              name="toretes"
-              value={desbaste.toretes}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Toras 20-25cm:</label>
-            <input
-              type="number"
-              name="toras_20_25cm"
-              value={desbaste.toras_20_25cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Toras 25-33cm:</label>
-            <input
-              type="number"
-              name="toras_25_33cm"
-              value={desbaste.toras_25_33cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Toras Acima de 33cm:</label>
-            <input
-              type="number"
-              name="toras_acima_33cm"
-              value={desbaste.toras_acima_33cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Preço Lenha:</label>
-            <input
-              type="number"
-              name="preco_lenha"
-              value={desbaste.preco_lenha}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Preço Toretes:</label>
-            <input
-              type="number"
-              name="preco_toretes"
-              value={desbaste.preco_toretes}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Preço Toras 20-25cm:</label>
-            <input
-              type="number"
-              name="preco_toras_20_25cm"
-              value={desbaste.preco_toras_20_25cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Preço Toras 25-33cm:</label>
-            <input
-              type="number"
-              name="preco_toras_25_33cm"
-              value={desbaste.preco_toras_25_33cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Preço Toras Acima de 33cm:</label>
-            <input
-              type="number"
-              name="preco_toras_acima_33cm"
-              value={desbaste.preco_toras_acima_33cm}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <div className="desbaste-popup-form-group">
-            <label>Valor Extração:</label>
-            <input
-              type="number"
-              name="valor_extracao"
-              value={desbaste.valor_extracao}
-              onChange={handleChange}
-              className="desbaste-popup-input"
-            />
-          </div>
-          <button onClick={handleSubmit} className="btn btn-success">
-            Atualizar
-          </button>
-          <button onClick={() => setSelectedPrevisao(null)} className="btn btn-danger">
-            Cancelar
-          </button>
-        </div>
-      )}
-
-{popup.message && <PopupAlert message={popup.message} type={popup.type} onClose={closePopupAlert} />}
-    </div>
-  );
+    );
 };
 
 export default RegisterDesbastePopup;

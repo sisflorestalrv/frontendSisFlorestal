@@ -50,7 +50,7 @@ const CadastroImoveis = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setPopup({ message: '', type: '' }); // Limpa popups antigos
+    setPopup({ message: '', type: '' });
 
     // 1. Validação de campos obrigatórios
     const requiredFields = ['descricao', 'codigo_cc', 'numero_car', 'area_imovel', 'area_plantio', 'especie', 'origem', 'num_arvores_plantadas', 'num_arvores_cortadas', 'matricula', 'data_plantio', 'numero_ccir', 'numero_itr', 'proprietario', 'municipio', 'localidade'];
@@ -58,8 +58,9 @@ const CadastroImoveis = () => {
       requiredFields.push('vencimento_contrato', 'arrendatario', 'data_contrato');
     }
     for (const field of requiredFields) {
-      if (!formData[field] || formData[field].trim() === '') {
-        setPopup({ message: `O campo "${field.replace('_', ' ')}" é obrigatório.`, type: 'error' });
+      if (!formData[field] || String(formData[field]).trim() === '') {
+        const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        setPopup({ message: `O campo "${fieldName}" é obrigatório.`, type: 'error' });
         return;
       }
     }
@@ -82,6 +83,10 @@ const CadastroImoveis = () => {
       ...formData,
       num_arvores_remanescentes,
       num_arvores_por_hectare,
+      // --- ALTERAÇÃO AQUI ---
+      // Adiciona o campo altura_desrama com valor fixo 0
+      altura_desrama: 0,
+      // --------------------
       arrendatario: isArrendado ? formData.arrendatario : null,
       vencimento_contrato: isArrendado ? formData.vencimento_contrato : null,
       data_contrato: isArrendado ? formData.data_contrato : null,
@@ -95,12 +100,10 @@ const CadastroImoveis = () => {
       });
 
       if (response.ok) {
-        // SUCESSO: Mostra a mensagem e limpa o formulário, mas NÃO NAVEGA
         setPopup({ message: "Imóvel cadastrado com sucesso!", type: 'success' });
         setFormData(initialState);
         setIsArrendado(false);
       } else {
-        // ERRO: Mostra a mensagem de erro do servidor
         const errorData = await response.json();
         setPopup({ message: errorData.error || "Erro ao cadastrar o imóvel.", type: 'error' });
       }

@@ -1,0 +1,174 @@
+/* --- FUNDO E OVERLAY --- */
+.register-desrama-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 41, 59, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* --- CONTAINER PRINCIPAL --- */
+.register-desrama-content {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.25);
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- CABEÇALHO --- */
+.register-desrama-header {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid #eef2f5;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.register-desrama-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a2e35;
+}
+.register-desrama-close-btn {
+  background: none; border: none; font-size: 2rem;
+  color: #9ca3af; cursor: pointer; transition: color 0.3s ease;
+}
+.register-desrama-close-btn:hover { color: #1f2937; }
+
+/* --- CORPO E SEÇÕES --- */
+.register-desrama-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+.register-desrama-section {
+  margin-bottom: 1.5rem;
+}
+.register-desrama-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1.5rem;
+}
+.register-desrama-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 2.5rem 0;
+}
+
+/* --- FORMULÁRIO DE NOVA PREVISÃO --- */
+.previsao-form-group {
+  display: flex;
+  gap: 1rem;
+}
+.previsao-form-group .form-input {
+  flex-grow: 1;
+}
+
+/* --- LISTA DE PREVISÕES PENDENTES --- */
+.previsoes-list-container {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.previsoes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.previsao-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+.previsao-item:not(:last-child) {
+  border-bottom: 1px solid #eef2f5;
+}
+.previsao-item:hover {
+  background-color: #f8fafc;
+}
+.previsao-item span {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* --- GRID DO FORMULÁRIO (Genérico) --- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.input-group { display: flex; flex-direction: column; }
+.input-group.full-width { grid-column: 1 / -1; }
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+.form-input {
+  width: 100%; padding: 12px 16px; background-color: #f8fafc;
+  border-radius: 8px; border: 1px solid #e2e8f0; font-size: 1rem;
+  color: #1f2937; transition: all 0.3s ease; font-family: inherit;
+}
+.form-input:focus {
+  outline: none; background-color: #ffffff; border-color: #1e8449;
+  box-shadow: 0 0 0 3px rgba(30, 132, 73, 0.15);
+}
+
+/* --- MENSAGENS DE FEEDBACK --- */
+.feedback-message {
+    padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;
+    font-weight: 500; text-align: center;
+}
+.error-message { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.success-message { background-color: #f0fdf4; color: #1e8449; border: 1px solid #bbf7d0; }
+.empty-message { text-align: center; padding: 2rem; color: #6b7280; font-style: italic; }
+
+/* --- RODAPÉ E BOTÕES --- */
+.register-desrama-footer {
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid #eef2f5;
+  background-color: #f8fafc;
+}
+
+.modal-btn {
+  padding: 12px 28px; border: none; border-radius: 10px; font-size: 1rem;
+  font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+}
+.modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-success { background-color: #1e8449; color: white; }
+.btn-success:hover:not(:disabled) { background-color: #196f3d; transform: translateY(-2px); }
+.btn-secondary { background-color: #6c757d; color: white; }
+.btn-secondary:hover:not(:disabled) { background-color: #5a6268; transform: translateY(-2px); }
+.btn-cancel { background-color: #e2e8f0; color: #475569; }
+.btn-cancel:hover { background-color: #cbd5e1; }
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+  .register-desrama-body { padding: 1.5rem 1rem; }
+  .form-grid { grid-template-columns: 1fr; }
+  .previsao-form-group { flex-direction: column; }
+  .previsao-item { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .register-desrama-footer { flex-direction: column-reverse; }
+  .modal-btn { width: 100%; }
+}
