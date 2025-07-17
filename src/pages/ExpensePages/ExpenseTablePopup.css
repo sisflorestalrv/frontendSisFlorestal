@@ -236,6 +236,46 @@
 .btn-link-stacked { background: none; border: none; color: #6c757d; cursor: pointer; font-weight: 600; }
 .btn-link-stacked:hover { text-decoration: underline; color: #343a40; }
 
+
+.expense-table td.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* Espaço entre os botões */
+}
+
+/* Estilo geral para os botões de ação */
+.action-btn-expense {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px; /* Aumenta a área de clique */
+  border-radius: 50%;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* Estilo específico para o botão de editar */
+.action-btn-expense.edit-btn {
+  color: #3498db; /* Azul */
+}
+.action-btn-expense.edit-btn:hover {
+  background-color: #eaf5fb;
+  color: #2980b9;
+}
+
+/* Estilo específico para o botão de deletar */
+.action-btn-expense.delete-btn {
+  color: #e74c3c; /* Vermelho */
+}
+.action-btn-expense.delete-btn:hover {
+  background-color: #fdedec;
+  color: #c0392b;
+}
+
+
 /*
 =================================================
 --- REGRAS DE RESPONSIVIDADE PARA CELULAR ---

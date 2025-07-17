@@ -5,10 +5,12 @@ import axios from "axios";
 import "./ExpenseTablePopup.css";
 import logo from "../../img/logo.png";
 import { API_BASE_URL } from "../../config";
+import EditExpenseModal from "./EditExpenseModal"; // Apenas importa, não declara mais
 import {
   FaFilePdf,
   FaRegCreditCard,
   FaTrashAlt,
+  FaPencilAlt,
   FaExclamationTriangle,
 } from "react-icons/fa";
 
@@ -36,6 +38,10 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   });
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState(null);
+
+  // Estados para a funcionalidade de edição
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState(null);
 
   const formatCurrency = (value) => {
     const number = parseFloat(value);
@@ -88,9 +94,12 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
       });
       setShowDeleteConfirmation(false);
       setItemToDeleteId(null);
+      setIsEditModalOpen(false);
+      setExpenseToEdit(null);
     }
   }, [isOpen, fetchData]);
 
+  // --- LÓGICA DE EXCLUSÃO ---
   const confirmDelete = (id) => {
     setItemToDeleteId(id);
     setShowDeleteConfirmation(true);
@@ -111,6 +120,36 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
       cancelDelete();
     }
   };
+
+  // --- LÓGICA DE EDIÇÃO ---
+  const handleOpenEditModal = (despesa) => {
+    setExpenseToEdit(despesa);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setExpenseToEdit(null);
+  };
+
+  const handleUpdateExpense = async (updatedExpenseData) => {
+    try {
+      const { data: updatedExpense } = await axios.put(
+        `${API_BASE_URL}/api/despesas/${updatedExpenseData.id}`,
+        updatedExpenseData
+      );
+      setDespesas((prevDespesas) =>
+        prevDespesas.map((d) =>
+          d.id === updatedExpense.id ? updatedExpense : d
+        )
+      );
+      handleCloseEditModal();
+    } catch (err) {
+      console.error("Erro ao atualizar despesa:", err);
+      setError("Não foi possível atualizar a despesa. Tente novamente.");
+    }
+  };
+
 
   const handleSelectForOrder = (id) => {
     setSelectedForOrder((prev) =>
@@ -384,6 +423,13 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
         </div>
       )}
 
+      <EditExpenseModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        expense={expenseToEdit}
+        onSave={handleUpdateExpense}
+      />
+
       <div className="expense-modal-overlay" onClick={onClose}>
         <div
           className="expense-modal-content"
@@ -418,7 +464,6 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
                     </thead>
                     <tbody>
                       <tr>
-                        {/* ADICIONE OS data-label AQUI */}
                         <td data-label="Custo Total">
                           {formatCurrency(totalCusto)}
                         </td>
@@ -463,7 +508,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
                           <th>V. Unitário</th>
                           <th>Total</th>
                           <th>Vencimento</th>
-                          <th>Ação</th>
+                          <th>Ações</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -497,9 +542,17 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
                               {formatCurrency(despesa.total)}
                             </td>
                             <td>{formatDate(despesa.validade)}</td>
-                            <td>
+                            <td className="actions-cell">
                               <button
-                                className="action-btn-expense"
+                                className="action-btn-expense edit-btn"
+                                title="Editar Despesa"
+                                onClick={() => handleOpenEditModal(despesa)}
+                              >
+                                <FaPencilAlt />
+                              </button>
+                              <button
+                                className="action-btn-expense delete-btn"
+                                title="Excluir Despesa"
                                 onClick={() => confirmDelete(despesa.id)}
                               >
                                 <FaTrashAlt />
