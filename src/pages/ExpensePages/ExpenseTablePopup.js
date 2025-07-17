@@ -5,7 +5,7 @@ import axios from "axios";
 import "./ExpenseTablePopup.css";
 import logo from "../../img/logo.png";
 import { API_BASE_URL } from "../../config";
-import EditExpenseModal from "./EditExpenseModal"; // Apenas importa, não declara mais
+import EditExpenseModal from "./EditExpenseModal";
 import {
   FaFilePdf,
   FaRegCreditCard,
@@ -150,19 +150,21 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     }
   };
 
-
   const handleSelectForOrder = (id) => {
     setSelectedForOrder((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   };
+
   const handleSelectAllForOrder = (e) => {
     setSelectedForOrder(e.target.checked ? despesas.map((d) => d.id) : []);
   };
+
   const handleReportOptionsChange = (e) => {
     const { name, value } = e.target;
     setReportOptions((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleColumnSelectChange = (column) => {
     setReportOptions((prev) => ({
       ...prev,
@@ -184,7 +186,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     ? totalCusto / imovel.num_arvores_plantadas
     : 0;
 
-  // --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO RESTAURADA ---
+  // --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO ---
   const gerarOrdemPDF = () => {
     if (selectedForOrder.length === 0) {
       alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
@@ -298,7 +300,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
   };
 
-  // --- LÓGICA DO PDF DE RELATÓRIO GERAL RESTAURADA ---
+  // --- LÓGICA DO PDF DE RELATÓRIO GERAL ---
   const gerarRelatorioPDF = () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
       alert("Você deve selecionar um intervalo de datas.");
@@ -398,252 +400,253 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <>
-      {showDeleteConfirmation && (
-        <div className="delete-confirmation-overlay" onClick={cancelDelete}>
-          <div
-            className="delete-confirmation-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <FaExclamationTriangle className="warning-icon" />
-            <h3>Confirmar Exclusão</h3>
-            <p>
-              Tem certeza que deseja excluir esta despesa? A ação não pode ser
-              desfeita.
-            </p>
-            <div className="modal-footer-stacked">
-              <button className="btn-danger-stacked" onClick={executeDelete}>
-                <FaTrashAlt /> Confirmar Exclusão
-              </button>
-              <button className="btn-link-stacked" onClick={cancelDelete}>
-                Cancelar
-              </button>
+    <div className="expense-modal-overlay" onClick={onClose}>
+      <div
+        className="expense-modal-content"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* O modal de edição e o de exclusão ficam aqui dentro para garantir a ordem de empilhamento correta */}
+        <EditExpenseModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          expense={expenseToEdit}
+          onSave={handleUpdateExpense}
+        />
+
+        {showDeleteConfirmation && (
+          <div className="delete-confirmation-overlay" onClick={cancelDelete}>
+            <div
+              className="delete-confirmation-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <FaExclamationTriangle className="warning-icon" />
+              <h3>Confirmar Exclusão</h3>
+              <p>
+                Tem certeza que deseja excluir esta despesa? A ação não pode ser
+                desfeita.
+              </p>
+              <div className="modal-footer-stacked">
+                <button className="btn-danger-stacked" onClick={executeDelete}>
+                  <FaTrashAlt /> Confirmar Exclusão
+                </button>
+                <button className="btn-link-stacked" onClick={cancelDelete}>
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <EditExpenseModal
-        isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
-        expense={expenseToEdit}
-        onSave={handleUpdateExpense}
-      />
+        <header className="expense-modal-header">
+          <h2 className="expense-modal-title">Relatório de Despesas</h2>
+          <span className="expense-modal-subtitle">
+            {imovel?.descricao || ""}
+          </span>
+          <button className="expense-modal-close-btn" onClick={onClose}>
+            &times;
+          </button>
+        </header>
 
-      <div className="expense-modal-overlay" onClick={onClose}>
-        <div
-          className="expense-modal-content"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <header className="expense-modal-header">
-            <h2 className="expense-modal-title">Relatório de Despesas</h2>
-            <span className="expense-modal-subtitle">
-              {imovel?.descricao || ""}
-            </span>
-            <button className="expense-modal-close-btn" onClick={onClose}>
-              &times;
-            </button>
-          </header>
-          <main className="expense-modal-body">
-            {loading ? (
-              <p className="expense-loading-message">Carregando...</p>
-            ) : error ? (
-              <p className="expense-error-message">{error}</p>
-            ) : (
-              <>
-                <section className="expense-section">
-                  <h3 className="expense-section-title">Resumo Financeiro</h3>
-                  <table className="expense-summary-table">
+        <main className="expense-modal-body">
+          {loading ? (
+            <p className="expense-loading-message">Carregando...</p>
+          ) : error ? (
+            <p className="expense-error-message">{error}</p>
+          ) : (
+            <>
+              <section className="expense-section">
+                <h3 className="expense-section-title">Resumo Financeiro</h3>
+                <table className="expense-summary-table">
+                  <thead>
+                    <tr>
+                      <th>Custo Total</th>
+                      <th>Custo / Árv. Remanescentes</th>
+                      <th>Despesa / Ha</th>
+                      <th>Custo por Muda</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Custo Total">
+                        {formatCurrency(totalCusto)}
+                      </td>
+                      <td data-label="Custo / Árv. Rem.">
+                        {formatCurrency(custoPorArvore)}
+                      </td>
+                      <td data-label="Despesa / Ha">
+                        {formatCurrency(despesaPorHa)}
+                      </td>
+                      <td data-label="Custo por Muda">
+                        {formatCurrency(custoPorMuda)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <div className="expense-divider"></div>
+
+              <section className="expense-section">
+                <h3 className="expense-section-title">Lista de Despesas</h3>
+                <div className="expense-table-responsive">
+                  <table className="expense-table">
                     <thead>
                       <tr>
-                        <th>Custo Total</th>
-                        <th>Custo / Árv. Remanescentes</th>
-                        <th>Despesa / Ha</th>
-                        <th>Custo por Muda</th>
+                        <th>
+                          <input
+                            type="checkbox"
+                            onChange={handleSelectAllForOrder}
+                            checked={
+                              despesas.length > 0 &&
+                              selectedForOrder.length === despesas.length
+                            }
+                            title="Selecionar Todos para Ordem"
+                          />
+                        </th>
+                        <th>Tipo</th>
+                        <th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Unidade</th>
+                        <th>Qtd.</th>
+                        <th>V. Unitário</th>
+                        <th>Total</th>
+                        <th>Vencimento</th>
+                        <th>Ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td data-label="Custo Total">
-                          {formatCurrency(totalCusto)}
-                        </td>
-                        <td data-label="Custo / Árv. Rem.">
-                          {formatCurrency(custoPorArvore)}
-                        </td>
-                        <td data-label="Despesa / Ha">
-                          {formatCurrency(despesaPorHa)}
-                        </td>
-                        <td data-label="Custo por Muda">
-                          {formatCurrency(custoPorMuda)}
-                        </td>
-                      </tr>
+                      {despesas.map((despesa) => (
+                        <tr
+                          key={despesa.id}
+                          className={
+                            selectedForOrder.includes(despesa.id)
+                              ? "selected-row"
+                              : ""
+                          }
+                        >
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedForOrder.includes(despesa.id)}
+                              onChange={() =>
+                                handleSelectForOrder(despesa.id)
+                              }
+                            />
+                          </td>
+                          <td>{despesa.tipo_de_despesa}</td>
+                          <td>{despesa.fornecedor}</td>
+                          <td>{despesa.produto}</td>
+                          <td>{despesa.unidade}</td>
+                          <td className="text-right">{despesa.quantidade}</td>
+                          <td className="text-right">
+                            {formatCurrency(despesa.valor_unitario)}
+                          </td>
+                          <td className="text-right total-cell">
+                            {formatCurrency(despesa.total)}
+                          </td>
+                          <td>{formatDate(despesa.validade)}</td>
+                          <td className="actions-cell">
+                            <button
+                              className="action-btn-expense edit-btn"
+                              title="Editar Despesa"
+                              onClick={() => handleOpenEditModal(despesa)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                            <button
+                              className="action-btn-expense delete-btn"
+                              title="Excluir Despesa"
+                              onClick={() => confirmDelete(despesa.id)}
+                            >
+                              <FaTrashAlt />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
-                </section>
+                </div>
+              </section>
 
-                <div className="expense-divider"></div>
+              <div className="expense-divider"></div>
 
-                <section className="expense-section">
-                  <h3 className="expense-section-title">Lista de Despesas</h3>
-                  <div className="expense-table-responsive">
-                    <table className="expense-table">
-                      <thead>
-                        <tr>
-                          <th>
-                            <input
-                              type="checkbox"
-                              onChange={handleSelectAllForOrder}
-                              checked={
-                                despesas.length > 0 &&
-                                selectedForOrder.length === despesas.length
-                              }
-                              title="Selecionar Todos para Ordem"
-                            />
-                          </th>
-                          <th>Tipo</th>
-                          <th>Fornecedor</th>
-                          <th>Produto</th>
-                          <th>Unidade</th>
-                          <th>Qtd.</th>
-                          <th>V. Unitário</th>
-                          <th>Total</th>
-                          <th>Vencimento</th>
-                          <th>Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {despesas.map((despesa) => (
-                          <tr
-                            key={despesa.id}
-                            className={
-                              selectedForOrder.includes(despesa.id)
-                                ? "selected-row"
-                                : ""
-                            }
-                          >
-                            <td>
-                              <input
-                                type="checkbox"
-                                checked={selectedForOrder.includes(despesa.id)}
-                                onChange={() =>
-                                  handleSelectForOrder(despesa.id)
-                                }
-                              />
-                            </td>
-                            <td>{despesa.tipo_de_despesa}</td>
-                            <td>{despesa.fornecedor}</td>
-                            <td>{despesa.produto}</td>
-                            <td>{despesa.unidade}</td>
-                            <td className="text-right">{despesa.quantidade}</td>
-                            <td className="text-right">
-                              {formatCurrency(despesa.valor_unitario)}
-                            </td>
-                            <td className="text-right total-cell">
-                              {formatCurrency(despesa.total)}
-                            </td>
-                            <td>{formatDate(despesa.validade)}</td>
-                            <td className="actions-cell">
-                              <button
-                                className="action-btn-expense edit-btn"
-                                title="Editar Despesa"
-                                onClick={() => handleOpenEditModal(despesa)}
-                              >
-                                <FaPencilAlt />
-                              </button>
-                              <button
-                                className="action-btn-expense delete-btn"
-                                title="Excluir Despesa"
-                                onClick={() => confirmDelete(despesa.id)}
-                              >
-                                <FaTrashAlt />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-
-                <div className="expense-divider"></div>
-
-                <section className="expense-section">
-                  <h3 className="expense-section-title">
-                    Opções de Relatório Geral
-                  </h3>
-                  <div className="expense-report-options">
-                    <div className="date-filter">
-                      <label>Período do Relatório:</label>
-                      <div className="date-inputs">
-                        <input
-                          type="date"
-                          name="startDate"
-                          value={reportOptions.startDate}
-                          onChange={handleReportOptionsChange}
-                        />
-                        <span>até</span>
-                        <input
-                          type="date"
-                          name="endDate"
-                          value={reportOptions.endDate}
-                          onChange={handleReportOptionsChange}
-                        />
-                      </div>
-                    </div>
-                    <div className="column-filter">
-                      <label>Colunas Incluídas:</label>
-                      <div className="column-checkboxes">
-                        {Object.keys(initialColumnSelection).map((col) => (
-                          <div className="checkbox-item" key={col}>
-                            <input
-                              type="checkbox"
-                              id={`col-${col}`}
-                              name={col}
-                              checked={reportOptions.columns[col]}
-                              onChange={() => handleColumnSelectChange(col)}
-                            />
-                            <label htmlFor={`col-${col}`}>
-                              {col
-                                .replace(/([A-Z])/g, " $1")
-                                .replace(/^./, (str) => str.toUpperCase())}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
+              <section className="expense-section">
+                <h3 className="expense-section-title">
+                  Opções de Relatório Geral
+                </h3>
+                <div className="expense-report-options">
+                  <div className="date-filter">
+                    <label>Período do Relatório:</label>
+                    <div className="date-inputs">
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={reportOptions.startDate}
+                        onChange={handleReportOptionsChange}
+                      />
+                      <span>até</span>
+                      <input
+                        type="date"
+                        name="endDate"
+                        value={reportOptions.endDate}
+                        onChange={handleReportOptionsChange}
+                      />
                     </div>
                   </div>
-                </section>
-              </>
-            )}
-          </main>
-          <footer className="expense-modal-footer">
-            <button
-              type="button"
-              className="modal-btn-expense btn-cancel-expense"
-              onClick={onClose}
-            >
-              Fechar
-            </button>
-            <button
-              type="button"
-              className="modal-btn-expense btn-secondary-expense"
-              onClick={gerarOrdemPDF}
-              disabled={selectedForOrder.length === 0}
-            >
-              <FaRegCreditCard /> Gerar Ordem
-            </button>
-            <button
-              type="button"
-              className="modal-btn-expense btn-success-expense"
-              onClick={gerarRelatorioPDF}
-              disabled={!reportOptions.startDate || !reportOptions.endDate}
-            >
-              <FaFilePdf /> Gerar Relatório
-            </button>
-          </footer>
-        </div>
+                  <div className="column-filter">
+                    <label>Colunas Incluídas:</label>
+                    <div className="column-checkboxes">
+                      {Object.keys(initialColumnSelection).map((col) => (
+                        <div className="checkbox-item" key={col}>
+                          <input
+                            type="checkbox"
+                            id={`col-${col}`}
+                            name={col}
+                            checked={reportOptions.columns[col]}
+                            onChange={() => handleColumnSelectChange(col)}
+                          />
+                          <label htmlFor={`col-${col}`}>
+                            {col
+                              .replace(/([A-Z])/g, " $1")
+                              .replace(/^./, (str) => str.toUpperCase())}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+        
+        <footer className="expense-modal-footer">
+          <button
+            type="button"
+            className="modal-btn-expense btn-cancel-expense"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+          <button
+            type="button"
+            className="modal-btn-expense btn-secondary-expense"
+            onClick={gerarOrdemPDF}
+            disabled={selectedForOrder.length === 0}
+          >
+            <FaRegCreditCard /> Gerar Ordem
+          </button>
+          <button
+            type="button"
+            className="modal-btn-expense btn-success-expense"
+            onClick={gerarRelatorioPDF}
+            disabled={!reportOptions.startDate || !reportOptions.endDate}
+          >
+            <FaFilePdf /> Gerar Relatório
+          </button>
+        </footer>
       </div>
-    </>
+    </div>
   );
 };
 

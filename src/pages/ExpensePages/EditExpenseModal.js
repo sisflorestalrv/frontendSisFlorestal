@@ -12,9 +12,8 @@ const formatCurrency = (value) => {
         }).format(number);
 };
 
-// <<< 1. ADICIONADO: A mesma lista de tipos de despesa do seu outro componente
 const tiposDespesa = [
-    "Compra de florestas", "Compra de mudas", "Compra de sementes","Serviço de Conserto de Cerca" ,
+    "Compra de florestas", "Compra de mudas", "Compra de sementes", "Serviço de Conserto de Cerca" ,
     "Serviço de abertura e manutenção de estradas", "Serviços de corte", "Serviços de plantio",
     "Serviços de coroamento", "Serviços de roçada", "Serviços de desrama", "Serviço de preparo de solo",
     "Aplicação de adubo", "Aplicação de herbicidas", "Aplicação de inseticidas", "Serviço de georreferenciamento",
@@ -65,7 +64,6 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onSave }) => {
         <form onSubmit={handleSubmit} className="edit-modal-form">
           <div className="form-grid">
 
-            {/* <<< 2. ALTERADO: O input de texto foi trocado por um select */}
             <div className="form-group">
               <label htmlFor="tipo_de_despesa">Tipo de Despesa</label>
               <select
