@@ -23,7 +23,7 @@ const tiposDespesa = [
     "Serviços de coroamento", "Serviços de roçada", "Serviços de desrama", "Serviço de preparo de solo",
     "Aplicação de adubo", "Aplicação de herbicidas", "Aplicação de inseticidas", "Serviço de georreferenciamento",
     "Serviço de Construção de Cerca", "Serviço de Desbaste", "Serviço de Contagem de Árvores", "Serviço de Inventário",
-    "Serviço de Corte de Brotos", "Serviço de Limpeza de Área"
+    "Serviço de Corte de Brotos", "Serviço de Limpeza de Área", "Serviço de Replante"
 ];
 
 const RegisterDespesaPopup = ({ isOpen, onClose, imovelId }) => {

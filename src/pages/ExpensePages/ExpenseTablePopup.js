@@ -187,119 +187,150 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     : 0;
 
   // --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO ---
-  const gerarOrdemPDF = () => {
-    if (selectedForOrder.length === 0) {
-      alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
-      return;
-    }
+  
+// --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO (Layout Refinado e Moderno) ---
+const gerarOrdemPDF = () => {
+  if (selectedForOrder.length === 0) {
+    alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
+    return;
+  }
 
-    let numeroOrdem =
-      parseInt(localStorage.getItem("numeroOrdem") || "0", 10) + 1;
-    localStorage.setItem("numeroOrdem", numeroOrdem);
+  const primeiraDespesa = despesas.find((d) => d.id === selectedForOrder[0]);
+  if (!primeiraDespesa) {
+    alert("Erro ao encontrar os dados da despesa selecionada.");
+    return;
+  }
+  const fornecedorDaDespesa = primeiraDespesa.fornecedor || "N/A";
+  const codigoCcDaDespesa = primeiraDespesa.codigo_cc || "N/A";
 
-    const pdf = new jsPDF();
-    const contentWidth = 180;
-    const squareX = (pdf.internal.pageSize.width - contentWidth) / 2;
-    const squareY = 15 + 20;
-    const squareHeight = 95;
+  let numeroOrdem = parseInt(localStorage.getItem("numeroOrdem") || "0", 10) + 1;
+  localStorage.setItem("numeroOrdem", numeroOrdem);
 
-    const imgWidth = 50;
-    const imgHeight = 25;
-    pdf.addImage(
-      logo,
-      "PNG",
-      (pdf.internal.pageSize.width - imgWidth) / 2,
-      10,
-      imgWidth,
-      imgHeight
-    );
+  const pdf = new jsPDF();
+  const contentWidth = 180;
+  const margin = (pdf.internal.pageSize.width - contentWidth) / 2;
+  const startY = 40;
 
-    pdf.setDrawColor(0, 0, 0, 50);
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(squareX, squareY, contentWidth, squareHeight, 3, 3);
+  // --- REFINAMENTOS MODERNOS ---
+  const primaryColor = [22, 160, 133]; // Verde principal
+  const textPrimaryColor = [30, 30, 30]; // Cinza bem escuro para textos principais
+  const textSecondaryColor = [120, 120, 120]; // Cinza mais claro para textos secundários
 
+  // 1. Logo no topo, como antes
+  const imgWidth = 45;
+  const imgHeight = 22.5;
+  pdf.addImage(
+    logo,
+    "PNG",
+    (pdf.internal.pageSize.width - imgWidth) / 2,
+    10,
+    imgWidth,
+    imgHeight
+  );
+
+  // 2. Conteúdo do Cabeçalho com melhor hierarquia visual
+  let currentY = startY + 10;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.setTextColor(...textPrimaryColor);
+  pdf.text(`Ordem de Pagamento #${numeroOrdem}`, margin, currentY);
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.setTextColor(...textSecondaryColor);
+  pdf.text(`Despesa: ${codigoCcDaDespesa}`, margin + contentWidth, currentY - 2, { align: 'right' });
+  pdf.text(`Data: ${new Date().toLocaleDateString("pt-BR", { timeZone: "UTC" })}`, margin + contentWidth, currentY + 3, { align: 'right' });
+
+  currentY += 12;
+
+  // Função auxiliar para desenhar as linhas de informação de forma padronizada
+  const drawInfoLine = (label, value, y) => {
+    pdf.setFontSize(10);
+    pdf.setTextColor(...textSecondaryColor);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
+    pdf.text(label, margin, y);
 
-    const ordemTop = squareY + 10;
-    pdf.setFontSize(16);
+    pdf.setTextColor(...textPrimaryColor);
     pdf.setFont("helvetica", "bold");
-    pdf.text(`Ordem de Pagamento ${numeroOrdem}`, squareX + 5, ordemTop);
-
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(
-      "Despesa: " + (despesas[0]?.codigo_cc || "N/A"),
-      squareX + contentWidth - 40,
-      ordemTop
-    );
-
-    const linhaImovelDataTop = ordemTop + 10;
-    pdf.text(
-      "Nome do Imóvel: " + (imovel?.descricao || "N/A"),
-      squareX + 5,
-      linhaImovelDataTop
-    );
-    pdf.text(
-      "Data: " + new Date().toLocaleDateString("pt-BR"),
-      squareX + contentWidth - 40,
-      linhaImovelDataTop
-    );
-
-    const linhaProprietarioTop = linhaImovelDataTop + 10;
-    pdf.text(
-      "Proprietário: " + (imovel?.proprietario || "N/A"),
-      squareX + 5,
-      linhaProprietarioTop
-    );
-
-    const tableColumns = [
-      "Tipo de Despesa",
-      "Quantidade",
-      "Valor Unitário",
-      "Vencimento",
-      "Total",
-    ];
-
-    const tableRows = selectedForOrder.map((despesaId) => {
-      const despesa = despesas.find((d) => d.id === despesaId);
-      return [
-        despesa.tipo_de_despesa || "",
-        despesa.quantidade || 0,
-        `R$ ${parseFloat(despesa.valor_unitario || 0).toFixed(2)}`,
-        new Date(despesa.validade).toLocaleDateString("pt-BR") || "",
-        `R$ ${parseFloat(despesa.total || 0).toFixed(2)}`,
-      ];
-    });
-
-    pdf.autoTable({
-      startY: linhaProprietarioTop + 8,
-      head: [tableColumns],
-      body: tableRows,
-      headStyles: { fillColor: [22, 160, 133], textColor: 255 },
-      theme: "grid",
-      tableWidth: contentWidth,
-      margin: { left: squareX },
-    });
-
-    const totalGeral = selectedForOrder.reduce((total, despesaId) => {
-      const despesa = despesas.find((d) => d.id === despesaId);
-      return total + (parseFloat(despesa.total) || 0);
-    }, 0);
-
-    pdf.autoTable({
-      startY: pdf.lastAutoTable.finalY + 4,
-      body: [["Total", "", "", `R$ ${totalGeral.toFixed(2)}`, ""]],
-      styles: { fontSize: 10, halign: "right" },
-      columnStyles: { 0: { halign: "left" } },
-      tableWidth: contentWidth,
-      margin: { left: squareX },
-    });
-
-    pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
+    pdf.text(value, margin + 35, y); // Deixa o valor em destaque
   };
 
+  drawInfoLine("PROPRIETÁRIO:", imovel?.proprietario || "N/A", currentY);
+  currentY += 7;
+  drawInfoLine("FORNECEDOR:", fornecedorDaDespesa, currentY);
+  currentY += 7;
+  drawInfoLine("IMÓVEL/FAZENDA:", imovel?.descricao || "N/A", currentY);
+
+  // 3. Tabela de Despesas com linhas mais elegantes
+  const tableColumns = ["Tipo de Despesa", "Quantidade", "Valor Unitário", "Vencimento", "Total"];
+  const tableRows = selectedForOrder.map((despesaId) => {
+    const despesa = despesas.find((d) => d.id === despesaId);
+    return [
+      despesa.tipo_de_despesa || "",
+      // ✨ AQUI A ALTERAÇÃO: Usando parseInt para número inteiro ✨
+      parseInt(despesa.quantidade || 0, 10),
+      formatCurrency(despesa.valor_unitario),
+      formatDate(despesa.validade),
+      formatCurrency(despesa.total),
+    ];
+  });
+  
+  pdf.autoTable({
+    startY: currentY + 8,
+    head: [tableColumns],
+    body: tableRows,
+    theme: "grid",
+    headStyles: {
+      fillColor: primaryColor,
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 10,
+    },
+    styles: {
+      lineWidth: 0.1, // Linhas da tabela mais finas
+      lineColor: [200, 200, 200], // Linhas cinza claro
+      font: 'helvetica',
+      fontSize: 9,
+      textColor: textPrimaryColor,
+      cellPadding: 2.5
+    },
+    columnStyles: {
+      1: { halign: 'right' },
+      2: { halign: 'right' },
+      4: { halign: 'right' },
+    },
+    tableWidth: contentWidth,
+    margin: { left: margin },
+  });
+  
+  // 4. Seção de Total com mais destaque
+  const totalGeral = selectedForOrder.reduce((total, despesaId) => {
+    const despesa = despesas.find((d) => d.id === despesaId);
+    return total + (parseFloat(despesa.total) || 0);
+  }, 0);
+
+  const totalY = pdf.lastAutoTable.finalY + 8;
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(...textSecondaryColor);
+  pdf.text('TOTAL GERAL', margin + contentWidth - 45, totalY, { align: 'right' });
+
+  pdf.setFontSize(16);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(...textPrimaryColor);
+  pdf.text(formatCurrency(totalGeral), margin + contentWidth, totalY, { align: 'right' });
+
+
+  // 5. Desenha o quadro principal por último com borda suave
+  const finalY = totalY + 8;
+  const rectHeight = finalY - startY; 
+  pdf.setDrawColor(...textSecondaryColor); // Borda cinza
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(margin - 7, startY - 7, contentWidth + 14, rectHeight, 4, 4);
+
+  // --- Salva o PDF ---
+  pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
+};
   // --- LÓGICA DO PDF DE RELATÓRIO GERAL ---
   const gerarRelatorioPDF = () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
