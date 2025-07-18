@@ -282,6 +282,90 @@
   background-color: #fdedec;
   color: #c0392b;
 }
+/* Contêiner principal para os cards de resumo */
+.summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaço entre os cards */
+}
+
+/* Estilo de cada card de resumo */
+.summary-card {
+  background-color: #f8f9fa; /* Um cinza bem claro de fundo */
+  border: 1px solid #dee2e6; /* Borda sutil */
+  border-radius: 8px; /* Bordas arredondadas */
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sombra suave */
+}
+
+/* Título dentro do card (ex: "Compra de Mudas") */
+.summary-card-title {
+  font-size: 1.1rem;
+  color: #343a40;
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Contêiner que divide o card em tabela e gráfico */
+.summary-card-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Layout responsivo */
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Contêiner da tabela de resumo */
+.summary-table-container {
+  overflow-x: auto;
+}
+
+/* Tabela de resumo dentro do card */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.summary-table thead th {
+  background-color: #e9ecef;
+  color: #495057;
+  font-weight: 600;
+}
+
+.summary-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rodapé da tabela com o total */
+.summary-table tfoot th {
+  padding-top: 10px;
+  font-weight: bold;
+  color: #212529;
+  text-align: right;
+  border-top: 2px solid #ced4da;
+}
+
+.summary-table tfoot th:first-child {
+    text-align: left;
+}
+
+/* Contêiner do gráfico para garantir que ele se ajuste */
+.summary-chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 150px; /* Altura mínima para o gráfico */
+  max-height: 300px; /* Altura máxima para não ficar gigante */
+}
+
 
 
 /*

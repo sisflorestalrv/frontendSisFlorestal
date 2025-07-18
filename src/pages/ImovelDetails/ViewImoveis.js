@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; 
 import { FaSearch, FaFilter, FaFilePdf, FaChevronLeft, FaChevronRight, FaTimes, FaExclamationTriangle, FaTrashAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -6,9 +6,13 @@ import 'jspdf-autotable';
 import logo from '../../img/logo.png';
 import './ViewImoveis.css';
 import { API_BASE_URL } from "../../config";
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels'; // <-- NOVO
+Chart.register(...registerables, ChartDataLabels); // <-- ALTERADO
 
 const ViewImoveis = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const chartContainerRef = useRef(null);
   const [imoveis, setImoveis] = useState([]);
   const [sortCriteria, setSortCriteria] = useState('');
   const [filters, setFilters] = useState({
@@ -186,7 +190,7 @@ const ViewImoveis = () => {
     return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const gerarRelatorio = () => {
+  const gerarRelatorio = async () => {
     const colunasSelecionadas = Object.keys(reportFilters.atributos)
         .filter(key => reportFilters.atributos[key])
         .map(key => ({ key, name: getFriendlyName(key) }));
@@ -196,39 +200,240 @@ const ViewImoveis = () => {
         return;
     }
 
-    const head = [colunasSelecionadas.map(col => col.name)];
+    setShowReportModal(false);
 
-    const body = filteredImoveis.map(imovel => {
-        return colunasSelecionadas.map(col => {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const THEME_COLOR = [56, 189, 114];
+    const LIGHT_GRAY = [220, 220, 220];
+    const TEXT_COLOR_DARK = '#333333';
+
+    const pageHeader = (data) => {
+        if (data.pageNumber === 1) {
+            try {
+                if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 8);
+            } catch (e) { console.error("Erro ao adicionar logo:", e); }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.setTextColor(...THEME_COLOR);
+            doc.text('Relatório de Imóveis', 15, 30);
+            doc.setDrawColor(...THEME_COLOR);
+            doc.setLineWidth(0.3);
+            doc.line(15, 33, pageWidth - 15, 33);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(128);
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 15, 30, { align: 'right' });
+        }
+    };
+
+    const pageFooter = (data) => {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${data.pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    };
+
+    const head = [colunasSelecionadas.map(col => col.name)];
+    const body = filteredImoveis.map(imovel => (
+        colunasSelecionadas.map(col => {
             const valor = imovel[col.key];
-            if (col.key.includes('data_') || col.key.includes('_contrato')) {
-                return formatarData(valor);
-            }
-            if (col.key.includes('area_') || col.key.includes('altura_')) {
-                return formatarNumero(valor);
+            if (['data_plantio', 'vencimento_contrato', 'data_contrato'].includes(col.key)) return formatarData(valor);
+            if (['area_imovel', 'area_plantio', 'altura_desrama'].includes(col.key)) return formatarNumero(valor);
+            if (['num_arvores_plantadas', 'num_arvores_cortadas', 'num_arvores_remanescentes'].includes(col.key)) {
+                const numero = Number(String(valor).replace(',', '.'));
+                return isNaN(numero) ? "N/A" : numero.toLocaleString('pt-BR');
             }
             return valor ?? "N/A";
-        });
-    });
-
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.addImage(logo, 'PNG', 14, 10, 40, 16);
-    doc.setFontSize(18);
-    doc.setTextColor(40);
-    doc.text('Relatório de Imóveis', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        })
+    ));
+    let tableFontSize = 8.5;
+    if (colunasSelecionadas.length > 20) tableFontSize = 5;
+    else if (colunasSelecionadas.length > 16) tableFontSize = 6;
+    else if (colunasSelecionadas.length > 12) tableFontSize = 7;
+    else if (colunasSelecionadas.length > 8) tableFontSize = 8;
     doc.autoTable({
-        head: head,
-        body: body,
-        startY: 35,
-        theme: 'grid',
-        headStyles: { fillColor: [40, 167, 69], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 8, cellPadding: 2 },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
+        head, body, startY: 40, showHead: 'firstPage',
+        didDrawPage: (data) => { pageHeader(data); pageFooter(data); },
+        margin: { top: 38, bottom: 20 }, theme: 'grid',
+        styles: { fontSize: tableFontSize, cellPadding: 2.5, valign: 'middle', lineColor: LIGHT_GRAY, lineWidth: 0.1, textColor: TEXT_COLOR_DARK },
+        headStyles: { fillColor: THEME_COLOR, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: tableFontSize + 0.5, lineColor: THEME_COLOR },
     });
-    setShowReportModal(false);
-    doc.save('relatorio_imoveis.pdf');
-  };
+    const colunasNumericas = ['area_imovel', 'area_plantio', 'num_arvores_plantadas', 'num_arvores_cortadas', 'num_arvores_remanescentes'];
+    const totalData = [], totalHeaders = [];
+    colunasSelecionadas.forEach(col => {
+        if (colunasNumericas.includes(col.key)) {
+            const total = filteredImoveis.reduce((sum, imovel) => sum + (parseFloat(String(imovel[col.key]).replace(/\./g, '').replace(',', '.')) || 0), 0);
+            totalHeaders.push(getFriendlyName(col.key));
+            totalData.push(total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        }
+    });
+    if (totalData.length > 0) {
+        doc.autoTable({
+            head: [['TOTAIS', ...totalHeaders]], body: [['', ...totalData]],
+            startY: doc.autoTable.previous.finalY + 5, theme: 'plain',
+            headStyles: { fontStyle: 'bold', fillColor: THEME_COLOR, textColor: 255, halign: 'center' },
+            bodyStyles: { fontStyle: 'bold', halign: 'center' },
+            didParseCell: (data) => {
+                if(data.section === 'head' && data.cell.raw === 'TOTAIS') data.cell.styles.halign = 'right';
+                if(data.section === 'body') data.cell.styles.fillColor = [245, 245, 245];
+            }
+        });
+    }
 
+    doc.addPage();
+    const chartPageNumber = doc.internal.getNumberOfPages();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...THEME_COLOR);
+    doc.text('Dashboard de Análise', pageWidth / 2, 20, { align: 'center' });
+    pageFooter({ pageNumber: chartPageNumber });
+
+    const addChartToPdf = async (chartId, chartConfig, x, y, width, height) => {
+        const container = chartContainerRef.current;
+        if (!container) return;
+        const canvas = document.createElement('canvas');
+        canvas.id = chartId;
+        canvas.width = width * 3;
+        canvas.height = height * 3;
+        container.appendChild(canvas);
+        try {
+            const backgroundColorPlugin = {
+                id: 'customBackgroundColor',
+                beforeDraw: (chart) => {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, chart.width, chart.height);
+                    ctx.restore();
+                }
+            };
+            chartConfig.plugins = [...(chartConfig.plugins || []), backgroundColorPlugin];
+            const chart = new Chart(canvas.getContext('2d'), chartConfig);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const imgData = chart.toBase64Image('image/png', 1.0);
+            doc.addImage(imgData, 'PNG', x, y, width, height, undefined, 'FAST');
+            chart.destroy();
+        } catch (e) {
+            console.error(`Erro ao gerar o gráfico ${chartId}:`, e);
+        } finally {
+            container.removeChild(canvas);
+        }
+    };
+    
+    const commonY = 35;
+    const commonHeight = pageHeight - commonY - 25;
+
+    const pieChartSize = commonHeight;
+    const pieChartX = 20;
+
+    const barChartX = pieChartX + pieChartSize + 10;
+    const barChartWidth = pageWidth - barChartX - 20;
+    const barChartHeight = commonHeight;
+
+    const chartColors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6', '#34495e', '#1abc9c'];
+
+    const baseChartOptions = {
+        animation: false,
+        layout: { padding: { top: 20, right: 20, bottom: 5, left: 10 } },
+        plugins: {
+            legend: { display: true, position: 'top', labels: { color: TEXT_COLOR_DARK, font: { size: 12 } } },
+            datalabels: { color: '#ffffff', font: { weight: 'bold', size: 11 }, textShadowBlur: 2, textShadowColor: 'rgba(0, 0, 0, 0.5)' }
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#EAEAEA' }, title: { display: true, color: TEXT_COLOR_DARK, font: { size: 14, weight: 'bold' } }, ticks: { color: TEXT_COLOR_DARK, font: { size: 11 } } },
+            x: { grid: { display: false }, title: { display: true, color: TEXT_COLOR_DARK, font: { size: 14, weight: 'bold' } }, ticks: { color: TEXT_COLOR_DARK, font: { size: 11 } } }
+        }
+    };
+
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(TEXT_COLOR_DARK);
+
+    const areaPorEspecie = filteredImoveis.reduce((acc, imovel) => {
+        const especie = imovel.especie || 'N/A';
+        const area = parseFloat(String(imovel.area_plantio).replace(/\./g, '').replace(',', '.')) || 0;
+        acc[especie] = (acc[especie] || 0) + area;
+        return acc;
+    }, {});
+
+    doc.text('Área de Plantio por Espécie', pieChartX + pieChartSize / 2, commonY - 8, { align: 'center' });
+    const areaChartConfig = {
+        type: 'pie',
+        data: {
+            labels: Object.keys(areaPorEspecie),
+            datasets: [{
+                data: Object.values(areaPorEspecie),
+                backgroundColor: chartColors,
+                borderColor: '#FFFFFF',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            ...baseChartOptions,
+            maintainAspectRatio: true,
+            scales: {},
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 15 } },
+                tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed.toLocaleString('pt-BR')} ha` } },
+                datalabels: {
+                    formatter: (value, ctx) => {
+                        const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        const percentage = (value * 100 / sum).toFixed(1) + '%';
+                        return (sum > 0 && (value*100/sum) > 5) ? percentage : '';
+                    },
+                    color: '#fff',
+                }
+            }
+        }
+    };
+    await addChartToPdf('areaChartCanvas', areaChartConfig, pieChartX, commonY, pieChartSize, pieChartSize);
+    
+    const imoveisPorMunicipio = filteredImoveis.reduce((acc, imovel) => {
+        const municipio = imovel.municipio || 'N/A';
+        acc[municipio] = (acc[municipio] || 0) + 1;
+        return acc;
+    }, {});
+    
+    doc.text('Imóveis por Município', barChartX + barChartWidth / 2, commonY - 8, { align: 'center' });
+    const municipioChartConfig = {
+        type: 'bar',
+        data: {
+            labels: Object.keys(imoveisPorMunicipio),
+            datasets: [{
+                label: 'Nº de Imóveis',
+                data: Object.values(imoveisPorMunicipio),
+                // ALTERADO: Removida a função de degradê e substituída por cores sólidas para maior confiabilidade.
+                backgroundColor: chartColors, 
+            }]
+        },
+        options: {
+            ...baseChartOptions,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    offset: 4,
+                    color: '#444',
+                    textShadowBlur: 0,
+                    textShadowColor: 'transparent',
+                    font: { weight: 'normal' },
+                    formatter: (value) => value.toLocaleString('pt-BR'),
+                }
+            },
+            scales: {
+                x: { ...baseChartOptions.scales.x, grid: { display: true, color: '#EAEAEA' }, title: { ...baseChartOptions.scales.x.title, text: 'Nº de Imóveis' } },
+                y: { ...baseChartOptions.scales.y, grid: { display: false }, title: { ...baseChartOptions.scales.y.title, text: '' } }
+            }
+        }
+    };
+    await addChartToPdf('municipioChartCanvas', municipioChartConfig, barChartX, commonY, barChartWidth, barChartHeight);
+
+    doc.save(`relatorio_imoveis_${new Date().toISOString().slice(0,10)}.pdf`);
+};
   const selecionarTodosAtributos = (selecionar) => {
     const todosAtributos = Object.keys(reportFilters.atributos).reduce((acc, key) => {
       acc[key] = selecionar;
@@ -239,6 +444,7 @@ const ViewImoveis = () => {
 
   return (
     <div className="view-imoveis-container">
+      <div ref={chartContainerRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}></div>
       {showDeleteConfirmation && (
         <div className="modal-overlay" onClick={cancelDelete}>
           <div className="modal-content delete-confirmation-modal" onClick={(e) => e.stopPropagation()}>

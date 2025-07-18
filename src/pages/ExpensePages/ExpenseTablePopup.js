@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import axios from "axios";
@@ -13,6 +13,9 @@ import {
   FaPencilAlt,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+Chart.register(...registerables, ChartDataLabels);
 
 const initialColumnSelection = {
   tipoDeDespesa: true,
@@ -24,6 +27,30 @@ const initialColumnSelection = {
   total: true,
   vencimento: true,
 };
+
+// Componente reutilizável para renderizar gráficos no React
+const ChartComponent = ({ config }) => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+    const canvas = canvasRef.current;
+    if (canvas) {
+      chartRef.current = new Chart(canvas, config);
+    }
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, [config]);
+
+  return <canvas ref={canvasRef}></canvas>;
+};
+
 
 const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   const [despesas, setDespesas] = useState([]);
@@ -38,10 +65,20 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   });
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState(null);
-
-  // Estados para a funcionalidade de edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState(null);
+
+  const chartContainerRef = useRef(null);
+
+  const expensesByType = useMemo(() => {
+    return despesas.reduce((acc, despesa) => {
+      const type = despesa.tipo_de_despesa || 'Não categorizado';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(despesa);
+      return acc;
+    }, {});
+  }, [despesas]);
+
 
   const formatCurrency = (value) => {
     const number = parseFloat(value);
@@ -99,7 +136,6 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     }
   }, [isOpen, fetchData]);
 
-  // --- LÓGICA DE EXCLUSÃO ---
   const confirmDelete = (id) => {
     setItemToDeleteId(id);
     setShowDeleteConfirmation(true);
@@ -121,7 +157,6 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     }
   };
 
-  // --- LÓGICA DE EDIÇÃO ---
   const handleOpenEditModal = (despesa) => {
     setExpenseToEdit(despesa);
     setIsEditModalOpen(true);
@@ -186,247 +221,310 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     ? totalCusto / imovel.num_arvores_plantadas
     : 0;
 
-  // --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO ---
-  
-// --- LÓGICA DO PDF DE ORDEM DE PAGAMENTO (Layout Refinado e Moderno) ---
-const gerarOrdemPDF = () => {
-  if (selectedForOrder.length === 0) {
-    alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
-    return;
-  }
-
-  const primeiraDespesa = despesas.find((d) => d.id === selectedForOrder[0]);
-  if (!primeiraDespesa) {
-    alert("Erro ao encontrar os dados da despesa selecionada.");
-    return;
-  }
-  const fornecedorDaDespesa = primeiraDespesa.fornecedor || "N/A";
-  const codigoCcDaDespesa = primeiraDespesa.codigo_cc || "N/A";
-
-  let numeroOrdem = parseInt(localStorage.getItem("numeroOrdem") || "0", 10) + 1;
-  localStorage.setItem("numeroOrdem", numeroOrdem);
-
-  const pdf = new jsPDF();
-  const contentWidth = 180;
-  const margin = (pdf.internal.pageSize.width - contentWidth) / 2;
-  const startY = 40;
-
-  // --- REFINAMENTOS MODERNOS ---
-  const primaryColor = [22, 160, 133]; // Verde principal
-  const textPrimaryColor = [30, 30, 30]; // Cinza bem escuro para textos principais
-  const textSecondaryColor = [120, 120, 120]; // Cinza mais claro para textos secundários
-
-  // 1. Logo no topo, como antes
-  const imgWidth = 45;
-  const imgHeight = 22.5;
-  pdf.addImage(
-    logo,
-    "PNG",
-    (pdf.internal.pageSize.width - imgWidth) / 2,
-    10,
-    imgWidth,
-    imgHeight
-  );
-
-  // 2. Conteúdo do Cabeçalho com melhor hierarquia visual
-  let currentY = startY + 10;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-  pdf.setTextColor(...textPrimaryColor);
-  pdf.text(`Ordem de Pagamento #${numeroOrdem}`, margin, currentY);
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(...textSecondaryColor);
-  pdf.text(`Despesa: ${codigoCcDaDespesa}`, margin + contentWidth, currentY - 2, { align: 'right' });
-  pdf.text(`Data: ${new Date().toLocaleDateString("pt-BR", { timeZone: "UTC" })}`, margin + contentWidth, currentY + 3, { align: 'right' });
-
-  currentY += 12;
-
-  // Função auxiliar para desenhar as linhas de informação de forma padronizada
-  const drawInfoLine = (label, value, y) => {
-    pdf.setFontSize(10);
-    pdf.setTextColor(...textSecondaryColor);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(label, margin, y);
-
-    pdf.setTextColor(...textPrimaryColor);
+  const gerarOrdemPDF = () => {
+    // A lógica desta função permanece a mesma, não foi alterada.
+    if (selectedForOrder.length === 0) {
+      alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
+      return;
+    }
+    const primeiraDespesa = despesas.find((d) => d.id === selectedForOrder[0]);
+    if (!primeiraDespesa) {
+      alert("Erro ao encontrar os dados da despesa selecionada.");
+      return;
+    }
+    const fornecedorDaDespesa = primeiraDespesa.fornecedor || "N/A";
+    const codigoCcDaDespesa = primeiraDespesa.codigo_cc || "N/A";
+    let numeroOrdem = parseInt(localStorage.getItem("numeroOrdem") || "0", 10) + 1;
+    localStorage.setItem("numeroOrdem", numeroOrdem);
+    const pdf = new jsPDF();
+    const contentWidth = 180;
+    const margin = (pdf.internal.pageSize.width - contentWidth) / 2;
+    const startY = 40;
+    const primaryColor = [22, 160, 133];
+    const textPrimaryColor = [30, 30, 30];
+    const textSecondaryColor = [120, 120, 120];
+    const imgWidth = 45;
+    const imgHeight = 22.5;
+    pdf.addImage(logo, "PNG", (pdf.internal.pageSize.width - imgWidth) / 2, 10, imgWidth, imgHeight);
+    let currentY = startY + 10;
     pdf.setFont("helvetica", "bold");
-    pdf.text(value, margin + 35, y); // Deixa o valor em destaque
+    pdf.setFontSize(18);
+    pdf.setTextColor(...textPrimaryColor);
+    pdf.text(`Ordem de Pagamento #${numeroOrdem}`, margin, currentY);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(...textSecondaryColor);
+    pdf.text(`Despesa: ${codigoCcDaDespesa}`, margin + contentWidth, currentY - 2, { align: 'right' });
+    pdf.text(`Data: ${new Date().toLocaleDateString("pt-BR", { timeZone: "UTC" })}`, margin + contentWidth, currentY + 3, { align: 'right' });
+    currentY += 12;
+    const drawInfoLine = (label, value, y) => {
+      pdf.setFontSize(10);
+      pdf.setTextColor(...textSecondaryColor);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(label, margin, y);
+      pdf.setTextColor(...textPrimaryColor);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(value, margin + 35, y);
+    };
+    drawInfoLine("PROPRIETÁRIO:", imovel?.proprietario || "N/A", currentY);
+    currentY += 7;
+    drawInfoLine("FORNECEDOR:", fornecedorDaDespesa, currentY);
+    currentY += 7;
+    drawInfoLine("IMÓVEL/FAZENDA:", imovel?.descricao || "N/A", currentY);
+    const tableColumns = ["Tipo de Despesa", "Quantidade", "Valor Unitário", "Vencimento", "Total"];
+    const tableRows = selectedForOrder.map((despesaId) => {
+      const despesa = despesas.find((d) => d.id === despesaId);
+      return [
+        despesa.tipo_de_despesa || "",
+        parseInt(despesa.quantidade || 0, 10),
+        formatCurrency(despesa.valor_unitario),
+        formatDate(despesa.validade),
+        formatCurrency(despesa.total),
+      ];
+    });
+    pdf.autoTable({
+      startY: currentY + 8,
+      head: [tableColumns],
+      body: tableRows,
+      theme: "grid",
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 10, },
+      styles: { lineWidth: 0.1, lineColor: [200, 200, 200], font: 'helvetica', fontSize: 9, textColor: textPrimaryColor, cellPadding: 2.5 },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 4: { halign: 'right' }, },
+      tableWidth: contentWidth,
+      margin: { left: margin },
+    });
+    const totalGeral = selectedForOrder.reduce((total, despesaId) => {
+      const despesa = despesas.find((d) => d.id === despesaId);
+      return total + (parseFloat(despesa.total) || 0);
+    }, 0);
+    const totalY = pdf.lastAutoTable.finalY + 8;
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(...textSecondaryColor);
+    pdf.text('TOTAL GERAL', margin + contentWidth - 45, totalY, { align: 'right' });
+    pdf.setFontSize(16);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(...textPrimaryColor);
+    pdf.text(formatCurrency(totalGeral), margin + contentWidth, totalY, { align: 'right' });
+    const finalY = totalY + 8;
+    const rectHeight = finalY - startY;
+    pdf.setDrawColor(...textSecondaryColor);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(margin - 7, startY - 7, contentWidth + 14, rectHeight, 4, 4);
+    pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
   };
 
-  drawInfoLine("PROPRIETÁRIO:", imovel?.proprietario || "N/A", currentY);
-  currentY += 7;
-  drawInfoLine("FORNECEDOR:", fornecedorDaDespesa, currentY);
-  currentY += 7;
-  drawInfoLine("IMÓVEL/FAZENDA:", imovel?.descricao || "N/A", currentY);
-
-  // 3. Tabela de Despesas com linhas mais elegantes
-  const tableColumns = ["Tipo de Despesa", "Quantidade", "Valor Unitário", "Vencimento", "Total"];
-  const tableRows = selectedForOrder.map((despesaId) => {
-    const despesa = despesas.find((d) => d.id === despesaId);
-    return [
-      despesa.tipo_de_despesa || "",
-      // ✨ AQUI A ALTERAÇÃO: Usando parseInt para número inteiro ✨
-      parseInt(despesa.quantidade || 0, 10),
-      formatCurrency(despesa.valor_unitario),
-      formatDate(despesa.validade),
-      formatCurrency(despesa.total),
-    ];
-  });
-  
-  pdf.autoTable({
-    startY: currentY + 8,
-    head: [tableColumns],
-    body: tableRows,
-    theme: "grid",
-    headStyles: {
-      fillColor: primaryColor,
-      textColor: 255,
-      fontStyle: 'bold',
-      fontSize: 10,
-    },
-    styles: {
-      lineWidth: 0.1, // Linhas da tabela mais finas
-      lineColor: [200, 200, 200], // Linhas cinza claro
-      font: 'helvetica',
-      fontSize: 9,
-      textColor: textPrimaryColor,
-      cellPadding: 2.5
-    },
-    columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      4: { halign: 'right' },
-    },
-    tableWidth: contentWidth,
-    margin: { left: margin },
-  });
-  
-  // 4. Seção de Total com mais destaque
-  const totalGeral = selectedForOrder.reduce((total, despesaId) => {
-    const despesa = despesas.find((d) => d.id === despesaId);
-    return total + (parseFloat(despesa.total) || 0);
-  }, 0);
-
-  const totalY = pdf.lastAutoTable.finalY + 8;
-  pdf.setFontSize(11);
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(...textSecondaryColor);
-  pdf.text('TOTAL GERAL', margin + contentWidth - 45, totalY, { align: 'right' });
-
-  pdf.setFontSize(16);
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(...textPrimaryColor);
-  pdf.text(formatCurrency(totalGeral), margin + contentWidth, totalY, { align: 'right' });
-
-
-  // 5. Desenha o quadro principal por último com borda suave
-  const finalY = totalY + 8;
-  const rectHeight = finalY - startY; 
-  pdf.setDrawColor(...textSecondaryColor); // Borda cinza
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(margin - 7, startY - 7, contentWidth + 14, rectHeight, 4, 4);
-
-  // --- Salva o PDF ---
-  pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
-};
-  // --- LÓGICA DO PDF DE RELATÓRIO GERAL ---
-  const gerarRelatorioPDF = () => {
+  // =========================================================================================================
+  // FUNÇÃO DE GERAR RELATÓRIO GERAL - VERSÃO FINAL COM TEMA VERDE E TABELA GERAL RESTAURADA
+  // =========================================================================================================
+  const gerarRelatorioPDF = async () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
       alert("Você deve selecionar um intervalo de datas.");
       return;
     }
 
     const pdf = new jsPDF("landscape");
-    const contentWidth = 270;
-    const marginLeft = (pdf.internal.pageSize.width - contentWidth) / 2;
+    const contentWidth = 277;
+    const marginLeft = 10;
+    const pageHeight = pdf.internal.pageSize.height;
+    
+    const headerColor = [39, 174, 96]; 
+    const textColor = [45, 45, 45];
+    const chartColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#00d2d3'];
 
-    pdf.addImage(
-      logo,
-      "PNG",
-      (pdf.internal.pageSize.width - 50) / 2,
-      10,
-      50,
-      20
-    );
+    const addChartToPdf = async (chartId, chartConfig, x, y, width, height) => {
+      const container = chartContainerRef.current;
+      if (!container) return;
+      const canvas = document.createElement('canvas');
+      canvas.id = chartId;
+      canvas.width = width * 3;
+      canvas.height = height * 3;
+      container.appendChild(canvas);
+      try {
+        const backgroundColorPlugin = {
+          id: 'customBackgroundColor',
+          beforeDraw: (chart) => {
+            const { ctx } = chart;
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+          }
+        };
+        chartConfig.plugins = [...(chartConfig.plugins || []), backgroundColorPlugin];
+        const chart = new Chart(canvas.getContext('2d'), chartConfig);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const imgData = chart.toBase64Image('image/png', 1.0);
+        pdf.addImage(imgData, 'PNG', x, y, width, height, undefined, 'FAST');
+        chart.destroy();
+      } catch (e) { console.error(`Erro ao gerar o gráfico ${chartId}:`, e); } 
+      finally { container.removeChild(canvas); }
+    };
+    
+    const drawSectionHeader = (text, y) => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFillColor(...headerColor);
+      pdf.rect(marginLeft, y - 6, contentWidth, 10, 'F');
+      pdf.text(text, marginLeft + 3, y);
+    };
+
+    pdf.addImage(logo, "PNG", marginLeft, 8, 35, 14);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text(
-      `Relatório de Despesas - ${imovel?.descricao || "Imóvel"}`,
-      pdf.internal.pageSize.width / 2,
-      40,
-      { align: "center" }
-    );
-
+    pdf.setFontSize(18);
+    pdf.setTextColor(...headerColor);
+    pdf.text(`Relatório de Despesas - ${imovel?.descricao || "Imóvel"}`, contentWidth + marginLeft, 15, { align: "right" });
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(12);
-    pdf.text(
-      `Período de ${formatDate(reportOptions.startDate)} até ${formatDate(
-        reportOptions.endDate
-      )}`,
-      pdf.internal.pageSize.width / 2,
-      48,
-      { align: "center" }
-    );
+    pdf.setFontSize(10);
+    pdf.setTextColor(...textColor);
+    pdf.text(`Período de ${formatDate(reportOptions.startDate)} a ${formatDate(reportOptions.endDate)}`, contentWidth + marginLeft, 21, { align: "right" });
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(...headerColor);
+    pdf.line(marginLeft, 28, contentWidth + marginLeft, 28);
+    
+    let currentY = 35;
+
+    const filteredDespesas = despesas.filter((d) => new Date(d.data) >= new Date(reportOptions.startDate) && new Date(d.data) <= new Date(reportOptions.endDate));
+    
+    drawSectionHeader("Lançamentos Gerais no Período", currentY);
+    currentY += 12;
 
     const tableColumns = [];
-    if (reportOptions.columns.tipoDeDespesa)
-      tableColumns.push("Tipo de Despesa");
+    if (reportOptions.columns.tipoDeDespesa) tableColumns.push("Tipo");
     if (reportOptions.columns.fornecedor) tableColumns.push("Fornecedor");
     if (reportOptions.columns.produto) tableColumns.push("Produto");
-    if (reportOptions.columns.unidade) tableColumns.push("Unidade");
+    if (reportOptions.columns.unidade) tableColumns.push("Un.");
     if (reportOptions.columns.quantidade) tableColumns.push("Qtd.");
-    if (reportOptions.columns.valorUnitario) tableColumns.push("V. Unitário");
+    if (reportOptions.columns.valorUnitario) tableColumns.push("V. Unit.");
     if (reportOptions.columns.total) tableColumns.push("Total");
     if (reportOptions.columns.vencimento) tableColumns.push("Vencimento");
 
-    const filteredDespesas = despesas.filter((despesa) => {
-      const despesaDate = new Date(despesa.data);
-      const start = new Date(reportOptions.startDate);
-      const end = new Date(reportOptions.endDate);
-      return despesaDate >= start && despesaDate <= end;
-    });
-
     const tableRows = filteredDespesas.map((despesa) => {
       const row = [];
-      if (reportOptions.columns.tipoDeDespesa)
-        row.push(despesa.tipo_de_despesa || "");
+      if (reportOptions.columns.tipoDeDespesa) row.push(despesa.tipo_de_despesa || "");
       if (reportOptions.columns.fornecedor) row.push(despesa.fornecedor || "");
       if (reportOptions.columns.produto) row.push(despesa.produto || "");
       if (reportOptions.columns.unidade) row.push(despesa.unidade || "");
       if (reportOptions.columns.quantidade) row.push(despesa.quantidade || "");
-      if (reportOptions.columns.valorUnitario)
-        row.push(formatCurrency(despesa.valor_unitario));
+      if (reportOptions.columns.valorUnitario) row.push(formatCurrency(despesa.valor_unitario));
       if (reportOptions.columns.total) row.push(formatCurrency(despesa.total));
-      if (reportOptions.columns.vencimento)
-        row.push(formatDate(despesa.validade));
+      if (reportOptions.columns.vencimento) row.push(formatDate(despesa.validade));
       return row;
     });
 
     pdf.autoTable({
-      startY: 60,
+      startY: currentY,
       head: [tableColumns],
       body: tableRows,
-      headStyles: { fillColor: [22, 160, 133] },
+      headStyles: { fillColor: headerColor, fontSize: 8 },
+      styles: { fontSize: 7, cellPadding: 1.5, textColor: textColor },
       theme: "grid",
     });
 
-    const totalDespesas = filteredDespesas.reduce(
-      (total, despesa) => total + (parseFloat(despesa.total) || 0),
-      0
-    );
-
-    pdf.setFontSize(12);
+    currentY = pdf.lastAutoTable.finalY + 10;
+    
+    // ==========================================================
+    // ALTERADO: Estilo da caixa de total geral para alta visibilidade
+    // ==========================================================
+    const totalGeral = filteredDespesas.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
+    pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
-    pdf.text(
-      `Total de Despesas no Período: ${formatCurrency(totalDespesas)}`,
-      marginLeft,
-      pdf.lastAutoTable.finalY + 15
-    );
+    pdf.setFillColor(...headerColor); // Fundo verde escuro
+    pdf.setDrawColor(...headerColor);
+    pdf.roundedRect(marginLeft, currentY, contentWidth, 10, 2, 2, 'FD');
+    pdf.setTextColor(255, 255, 255); // Texto branco
+    pdf.text("TOTAL GERAL NO PERÍODO:", marginLeft + 5, currentY + 6.5);
+    pdf.text(formatCurrency(totalGeral), marginLeft + contentWidth - 5, currentY + 6.5, { align: 'right' });
+    currentY += 17;
 
-    pdf.save("relatorio-de-despesas.pdf");
+    // Reseta a cor do texto para o padrão do documento
+    pdf.setTextColor(...textColor);
+
+    const expensesByTypeForPDF = filteredDespesas.reduce((acc, despesa) => {
+      const type = despesa.tipo_de_despesa || 'Não categorizado';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(despesa);
+      return acc;
+    }, {});
+
+    for (const type in expensesByTypeForPDF) {
+      if (Object.hasOwnProperty.call(expensesByTypeForPDF, type)) {
+        const despesasDoTipo = expensesByTypeForPDF[type];
+        
+        const tableBody = despesasDoTipo.map(d => [d.produto || 'N/A', d.quantidade, formatCurrency(d.total)]);
+        const tableHeight = (tableBody.length + 2) * 6;
+        const chartHeight = 60;
+        const sectionHeight = Math.max(tableHeight, chartHeight) + 25;
+
+        if (currentY + sectionHeight > pageHeight - 15) {
+            pdf.addPage();
+            currentY = 20;
+        }
+
+        drawSectionHeader(`Detalhes de: ${type}`, currentY);
+        currentY += 12;
+
+        const tableX = marginLeft;
+        const tableWidth = contentWidth * 0.55;
+        const chartX = tableX + tableWidth + 10;
+        const chartWidth = contentWidth - tableWidth - 10;
+        const sectionStartY = currentY;
+
+        const totalPorTipo = despesasDoTipo.reduce((sum, d) => sum + parseFloat(d.total || 0), 0);
+        pdf.autoTable({
+            startY: sectionStartY,
+            head: [['Produto', 'Qtd.', 'Valor Total']],
+            body: tableBody,
+            foot: [['Total', '', formatCurrency(totalPorTipo)]],
+            theme: 'striped',
+            headStyles: { fillColor: headerColor, fontSize: 9 },
+            footStyles: { fillColor: [232, 245, 233], textColor: textColor, fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
+            margin: { left: tableX },
+            tableWidth: tableWidth
+        });
+        const tableFinalY = pdf.lastAutoTable.finalY;
+
+        const chartData = despesasDoTipo.reduce((acc, d) => {
+            const product = d.produto || 'N/A';
+            acc[product] = (acc[product] || 0) + parseFloat(d.total || 0);
+            return acc;
+        }, {});
+        
+        const chartConfig = {
+            type: 'bar',
+            data: {
+                labels: Object.keys(chartData),
+                datasets: [{
+                    label: `Gasto por Produto`,
+                    data: Object.values(chartData),
+                    backgroundColor: chartColors,
+                    borderColor: headerColor,
+                    borderWidth: 1,
+                    borderRadius: 3,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } },
+                    datalabels: { display: false }
+                },
+                scales: { x: { ticks: { callback: (v) => formatCurrency(v) } } }
+            }
+        };
+
+        await addChartToPdf(`chart-${type.replace(/\s/g, '')}`, chartConfig, chartX, sectionStartY, chartWidth, chartHeight);
+        
+        currentY = Math.max(tableFinalY, sectionStartY + chartHeight) + 15;
+      }
+    }
+    
+    pdf.save("relatorio-de-despesas-final.pdf");
   };
+
 
   if (!isOpen) return null;
 
@@ -436,7 +534,8 @@ const gerarOrdemPDF = () => {
         className="expense-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* O modal de edição e o de exclusão ficam aqui dentro para garantir a ordem de empilhamento correta */}
+        <div ref={chartContainerRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}></div>
+        
         <EditExpenseModal
           isOpen={isEditModalOpen}
           onClose={handleCloseEditModal}
@@ -598,7 +697,7 @@ const gerarOrdemPDF = () => {
                   </table>
                 </div>
               </section>
-
+              
               <div className="expense-divider"></div>
 
               <section className="expense-section">
@@ -645,6 +744,92 @@ const gerarOrdemPDF = () => {
                       ))}
                     </div>
                   </div>
+                </div>
+              </section>
+
+              <div className="expense-divider"></div>
+              
+              <section className="expense-section">
+                <h3 className="expense-section-title">Resumo por Tipo de Despesa</h3>
+                <div className="summary-container">
+                  {Object.entries(expensesByType).map(([type, despesasDoTipo]) => {
+                    const chartData = despesasDoTipo.reduce((acc, d) => {
+                      const product = d.produto || 'N/A';
+                      acc[product] = (acc[product] || 0) + parseFloat(d.total || 0);
+                      return acc;
+                    }, {});
+
+                    const chartConfig = {
+                      type: 'bar',
+                      data: {
+                        labels: Object.keys(chartData),
+                        datasets: [{
+                          label: `Gasto por Produto (R$)`,
+                          data: Object.values(chartData),
+                          backgroundColor: ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'],
+                          borderRadius: 4,
+                        }]
+                      },
+                      options: {
+                        indexAxis: 'y',
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                            callbacks: {
+                              label: (context) => formatCurrency(context.raw)
+                            }
+                          },
+                          datalabels: {
+                            display: false
+                          }
+                        },
+                        scales: { 
+                          x: { 
+                            ticks: { 
+                              callback: (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(value)
+                            } 
+                          } 
+                        }
+                      }
+                    };
+                    
+                    const totalPorTipo = despesasDoTipo.reduce((sum, d) => sum + parseFloat(d.total || 0), 0);
+
+                    return (
+                      <div key={type} className="summary-card">
+                        <h4 className="summary-card-title">{type}</h4>
+                        <div className="summary-card-content">
+                          <div className="summary-table-container">
+                             <table className="summary-table">
+                              <thead>
+                                <tr>
+                                  <th>Produto</th>
+                                  <th>Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {despesasDoTipo.map(d => (
+                                  <tr key={d.id}>
+                                    <td>{d.produto}</td>
+                                    <td>{formatCurrency(d.total)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr>
+                                  <th>Total</th>
+                                  <th>{formatCurrency(totalPorTipo)}</th>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          <div className="summary-chart-container">
+                            <ChartComponent config={chartConfig} />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             </>
