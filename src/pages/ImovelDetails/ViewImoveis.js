@@ -118,6 +118,17 @@ const ViewImoveis = () => {
     }));
   };
 
+  // INDICAÇÃO: Adicione esta função dentro do seu componente ViewImoveis
+const truncateText = (text, maxLength) => {
+    // Converte o valor para string para garantir o funcionamento
+    const textAsString = String(text ?? ''); 
+    if (textAsString.length <= maxLength) {
+        return textAsString;
+    }
+    // Subtrai 3 para dar espaço às reticências
+    return textAsString.substring(0, maxLength - 3) + '...';
+};
+
   const filteredImoveis = imoveis
     .filter((imovel) => {
       const matchesSearchTerm = imovel.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -236,18 +247,38 @@ const ViewImoveis = () => {
     };
 
     const head = [colunasSelecionadas.map(col => col.name)];
-    const body = filteredImoveis.map(imovel => (
-        colunasSelecionadas.map(col => {
-            const valor = imovel[col.key];
-            if (['data_plantio', 'vencimento_contrato', 'data_contrato'].includes(col.key)) return formatarData(valor);
-            if (['area_imovel', 'area_plantio', 'altura_desrama'].includes(col.key)) return formatarNumero(valor);
-            if (['num_arvores_plantadas', 'num_arvores_cortadas', 'num_arvores_remanescentes'].includes(col.key)) {
-                const numero = Number(String(valor).replace(',', '.'));
-                return isNaN(numero) ? "N/A" : numero.toLocaleString('pt-BR');
-            }
-            return valor ?? "N/A";
-        })
-    ));
+    // INDICAÇÃO: Dentro da função gerarRelatorio, substitua a criação do 'body' por este trecho
+
+const body = filteredImoveis.map(imovel => (
+    colunasSelecionadas.map(col => {
+        const valor = imovel[col.key];
+
+        // --- LÓGICA DE TRUNCAMENTO APLICADA AQUI ---
+        const camposTextoLongo = ['descricao', 'proprietario', 'arrendatario', 'localidade'];
+        if (camposTextoLongo.includes(col.key)) {
+            // Limita campos de texto a 25 caracteres para manter a naturalidade
+            return truncateText(valor, 25);
+        }
+
+        const camposNumerosLongos = ['matricula', 'numero_car'];
+        if (camposNumerosLongos.includes(col.key)) {
+            // Limita campos de código/número a 15 caracteres
+            return truncateText(valor, 15);
+        }
+        // --- FIM DA LÓGICA DE TRUNCAMENTO ---
+        
+        // Mantém a formatação original para os outros campos
+        if (['data_plantio', 'vencimento_contrato', 'data_contrato'].includes(col.key)) return formatarData(valor);
+        if (['area_imovel', 'area_plantio', 'altura_desrama'].includes(col.key)) return formatarNumero(valor);
+        if (['num_arvores_plantadas', 'num_arvores_cortadas', 'num_arvores_remanescentes'].includes(col.key)) {
+            const numero = Number(String(valor).replace(',', '.'));
+            return isNaN(numero) ? "N/A" : numero.toLocaleString('pt-BR');
+        }
+        
+        // Para os demais campos, apenas limita o tamanho geral para segurança
+        return truncateText(valor, 30);
+    })
+));
     let tableFontSize = 8.5;
     if (colunasSelecionadas.length > 20) tableFontSize = 5;
     else if (colunasSelecionadas.length > 16) tableFontSize = 6;

@@ -80,7 +80,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   }, [despesas]);
 
 
-  const formatCurrency = (value) => {
+  const formatCurrency = useCallback((value) => {
     const number = parseFloat(value);
     return isNaN(number)
       ? "R$ 0,00"
@@ -88,13 +88,13 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
           style: "currency",
           currency: "BRL",
         }).format(number);
-  };
+  }, []);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     return dateString
       ? new Date(dateString).toLocaleDateString("pt-BR", { timeZone: "UTC" })
       : "N/A";
-  };
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!imovelId) return;
@@ -220,6 +220,53 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   const custoPorMuda = imovel?.num_arvores_plantadas
     ? totalCusto / imovel.num_arvores_plantadas
     : 0;
+  
+  // ==========================================================
+  // ALTERADO: Lógica para consolidar dados para o novo gráfico e tabela
+  // ==========================================================
+  const totalsByType = useMemo(() => {
+    return Object.entries(expensesByType).reduce((acc, [type, despesasDoTipo]) => {
+      const total = despesasDoTipo.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
+      acc[type] = total;
+      return acc;
+    }, {});
+  }, [expensesByType]);
+
+  const comparativeChartConfig = useMemo(() => ({
+    type: 'bar',
+    data: {
+      labels: Object.keys(totalsByType),
+      datasets: [{
+        label: 'Total Gasto por Tipo (R$)',
+        data: Object.values(totalsByType),
+        backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e', '#1abc9c'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => formatCurrency(context.raw)
+          }
+        },
+        datalabels: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(value)
+          }
+        }
+      }
+    }
+  }), [totalsByType, formatCurrency]);
 
   const gerarOrdemPDF = () => {
     // A lógica desta função permanece a mesma, não foi alterada.
@@ -315,7 +362,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   };
 
   // =========================================================================================================
-  // FUNÇÃO DE GERAR RELATÓRIO GERAL - VERSÃO FINAL COM TEMA VERDE E TABELA GERAL RESTAURADA
+  // ALTERADO: FUNÇÃO DE GERAR RELATÓRIO PDF com tabela e gráfico comparativo único.
   // =========================================================================================================
   const gerarRelatorioPDF = async () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
@@ -330,7 +377,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     
     const headerColor = [39, 174, 96]; 
     const textColor = [45, 45, 45];
-    const chartColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#00d2d3'];
+    const chartColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#00d2d3', '#3498db', '#9b59b6'];
 
     const addChartToPdf = async (chartId, chartConfig, x, y, width, height) => {
       const container = chartContainerRef.current;
@@ -351,7 +398,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
             ctx.restore();
           }
         };
-        chartConfig.plugins = [...(chartConfig.plugins || []), backgroundColorPlugin];
+        chartConfig.plugins = [...(chartConfig.plugins || []), backgroundColorPlugin, ChartDataLabels];
         const chart = new Chart(canvas.getContext('2d'), chartConfig);
         await new Promise(resolve => setTimeout(resolve, 500));
         const imgData = chart.toBase64Image('image/png', 1.0);
@@ -424,103 +471,89 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
 
     currentY = pdf.lastAutoTable.finalY + 10;
     
-    // ==========================================================
-    // ALTERADO: Estilo da caixa de total geral para alta visibilidade
-    // ==========================================================
     const totalGeral = filteredDespesas.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
-    pdf.setFillColor(...headerColor); // Fundo verde escuro
+    pdf.setFillColor(...headerColor);
     pdf.setDrawColor(...headerColor);
     pdf.roundedRect(marginLeft, currentY, contentWidth, 10, 2, 2, 'FD');
-    pdf.setTextColor(255, 255, 255); // Texto branco
+    pdf.setTextColor(255, 255, 255);
     pdf.text("TOTAL GERAL NO PERÍODO:", marginLeft + 5, currentY + 6.5);
     pdf.text(formatCurrency(totalGeral), marginLeft + contentWidth - 5, currentY + 6.5, { align: 'right' });
     currentY += 17;
 
-    // Reseta a cor do texto para o padrão do documento
     pdf.setTextColor(...textColor);
-
-    const expensesByTypeForPDF = filteredDespesas.reduce((acc, despesa) => {
-      const type = despesa.tipo_de_despesa || 'Não categorizado';
-      if (!acc[type]) acc[type] = [];
-      acc[type].push(despesa);
-      return acc;
+    
+    // ==========================================================
+    // NOVA SEÇÃO: Análise Comparativa por Tipo de Despesa
+    // ==========================================================
+    const totalsByTypeForPDF = filteredDespesas.reduce((acc, despesa) => {
+        const type = despesa.tipo_de_despesa || 'Não categorizado';
+        if (!acc[type]) acc[type] = 0;
+        acc[type] += parseFloat(despesa.total) || 0;
+        return acc;
     }, {});
-
-    for (const type in expensesByTypeForPDF) {
-      if (Object.hasOwnProperty.call(expensesByTypeForPDF, type)) {
-        const despesasDoTipo = expensesByTypeForPDF[type];
-        
-        const tableBody = despesasDoTipo.map(d => [d.produto || 'N/A', d.quantidade, formatCurrency(d.total)]);
-        const tableHeight = (tableBody.length + 2) * 6;
-        const chartHeight = 60;
-        const sectionHeight = Math.max(tableHeight, chartHeight) + 25;
-
-        if (currentY + sectionHeight > pageHeight - 15) {
-            pdf.addPage();
-            currentY = 20;
-        }
-
-        drawSectionHeader(`Detalhes de: ${type}`, currentY);
-        currentY += 12;
-
-        const tableX = marginLeft;
-        const tableWidth = contentWidth * 0.55;
-        const chartX = tableX + tableWidth + 10;
-        const chartWidth = contentWidth - tableWidth - 10;
-        const sectionStartY = currentY;
-
-        const totalPorTipo = despesasDoTipo.reduce((sum, d) => sum + parseFloat(d.total || 0), 0);
-        pdf.autoTable({
-            startY: sectionStartY,
-            head: [['Produto', 'Qtd.', 'Valor Total']],
-            body: tableBody,
-            foot: [['Total', '', formatCurrency(totalPorTipo)]],
-            theme: 'striped',
-            headStyles: { fillColor: headerColor, fontSize: 9 },
-            footStyles: { fillColor: [232, 245, 233], textColor: textColor, fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
-            margin: { left: tableX },
-            tableWidth: tableWidth
-        });
-        const tableFinalY = pdf.lastAutoTable.finalY;
-
-        const chartData = despesasDoTipo.reduce((acc, d) => {
-            const product = d.produto || 'N/A';
-            acc[product] = (acc[product] || 0) + parseFloat(d.total || 0);
-            return acc;
-        }, {});
-        
-        const chartConfig = {
-            type: 'bar',
-            data: {
-                labels: Object.keys(chartData),
-                datasets: [{
-                    label: `Gasto por Produto`,
-                    data: Object.values(chartData),
-                    backgroundColor: chartColors,
-                    borderColor: headerColor,
-                    borderWidth: 1,
-                    borderRadius: 3,
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } },
-                    datalabels: { display: false }
-                },
-                scales: { x: { ticks: { callback: (v) => formatCurrency(v) } } }
-            }
-        };
-
-        await addChartToPdf(`chart-${type.replace(/\s/g, '')}`, chartConfig, chartX, sectionStartY, chartWidth, chartHeight);
-        
-        currentY = Math.max(tableFinalY, sectionStartY + chartHeight) + 15;
-      }
+    
+    if (currentY + 60 > pageHeight - 15) { // Check space for new section
+        pdf.addPage();
+        currentY = 20;
     }
+
+    drawSectionHeader("Análise Comparativa por Tipo de Despesa", currentY);
+    currentY += 12;
+
+    const summaryTableX = marginLeft;
+    const summaryTableWidth = contentWidth * 0.4;
+    const chartX = summaryTableX + summaryTableWidth + 10;
+    const chartWidth = contentWidth - summaryTableWidth - 10;
+    const sectionStartY = currentY;
+
+    // Tabela de totais por tipo
+    const summaryTableBody = Object.entries(totalsByTypeForPDF).map(([type, total]) => [type, formatCurrency(total)]);
+    pdf.autoTable({
+        startY: sectionStartY,
+        head: [['Tipo de Despesa', 'Valor Total']],
+        body: summaryTableBody,
+        theme: 'striped',
+        headStyles: { fillColor: headerColor, fontSize: 9 },
+        styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
+        margin: { left: summaryTableX },
+        tableWidth: summaryTableWidth,
+        columnStyles: { 1: { halign: 'right' } },
+    });
+    const tableFinalY = pdf.lastAutoTable.finalY;
+
+    // Gráfico comparativo
+    const chartHeight = Math.max(70, summaryTableBody.length * 9); // Altura dinâmica
+    const comparativeChartConfigPDF = {
+        type: 'bar',
+        data: {
+            labels: Object.keys(totalsByTypeForPDF),
+            datasets: [{
+                data: Object.values(totalsByTypeForPDF),
+                backgroundColor: chartColors,
+                borderColor: headerColor,
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } },
+                datalabels: {
+                    display: true, anchor: 'end', align: 'right',
+                    formatter: (value) => formatCurrency(value),
+                    color: textColor, font: { size: 9, weight: 'bold' }
+                }
+            },
+            scales: {
+                x: { ticks: { callback: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v) } },
+                y: { ticks: { font: { size: 8 } } }
+            }
+        }
+    };
+    await addChartToPdf('comparative-chart-pdf', comparativeChartConfigPDF, chartX, sectionStartY, chartWidth, chartHeight);
     
     pdf.save("relatorio-de-despesas-final.pdf");
   };
@@ -534,7 +567,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
         className="expense-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
-        <div ref={chartContainerRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}></div>
+        <div ref={chartContainerRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '1000px', height: '1000px' }}></div>
         
         <EditExpenseModal
           isOpen={isEditModalOpen}
@@ -749,87 +782,31 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
 
               <div className="expense-divider"></div>
               
+              {/* ========================================================== */}
+              {/* ALTERADO: Seção unificada com tabela e gráfico comparativo */}
+              {/* ========================================================== */}
               <section className="expense-section">
-                <h3 className="expense-section-title">Resumo por Tipo de Despesa</h3>
-                <div className="summary-container">
-                  {Object.entries(expensesByType).map(([type, despesasDoTipo]) => {
-                    const chartData = despesasDoTipo.reduce((acc, d) => {
-                      const product = d.produto || 'N/A';
-                      acc[product] = (acc[product] || 0) + parseFloat(d.total || 0);
-                      return acc;
-                    }, {});
-
-                    const chartConfig = {
-                      type: 'bar',
-                      data: {
-                        labels: Object.keys(chartData),
-                        datasets: [{
-                          label: `Gasto por Produto (R$)`,
-                          data: Object.values(chartData),
-                          backgroundColor: ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'],
-                          borderRadius: 4,
-                        }]
-                      },
-                      options: {
-                        indexAxis: 'y',
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: (context) => formatCurrency(context.raw)
-                            }
-                          },
-                          datalabels: {
-                            display: false
-                          }
-                        },
-                        scales: { 
-                          x: { 
-                            ticks: { 
-                              callback: (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(value)
-                            } 
-                          } 
-                        }
-                      }
-                    };
-                    
-                    const totalPorTipo = despesasDoTipo.reduce((sum, d) => sum + parseFloat(d.total || 0), 0);
-
-                    return (
-                      <div key={type} className="summary-card">
-                        <h4 className="summary-card-title">{type}</h4>
-                        <div className="summary-card-content">
-                          <div className="summary-table-container">
-                             <table className="summary-table">
-                              <thead>
-                                <tr>
-                                  <th>Produto</th>
-                                  <th>Total</th>
+                <h3 className="expense-section-title">Análise Comparativa por Tipo de Despesa</h3>
+                <div className="expense-table-responsive" style={{ marginBottom: '2rem' }}>
+                    <table className="summary-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Despesa</th>
+                                <th className="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(totalsByType).map(([type, total]) => (
+                                <tr key={type}>
+                                    <td>{type}</td>
+                                    <td className="text-right">{formatCurrency(total)}</td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {despesasDoTipo.map(d => (
-                                  <tr key={d.id}>
-                                    <td>{d.produto}</td>
-                                    <td>{formatCurrency(d.total)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                              <tfoot>
-                                <tr>
-                                  <th>Total</th>
-                                  <th>{formatCurrency(totalPorTipo)}</th>
-                                </tr>
-                              </tfoot>
-                            </table>
-                          </div>
-                          <div className="summary-chart-container">
-                            <ChartComponent config={chartConfig} />
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="comparative-chart-container" style={{ position: 'relative', height: '350px' }}>
+                    <ChartComponent config={comparativeChartConfig} />
                 </div>
               </section>
             </>
