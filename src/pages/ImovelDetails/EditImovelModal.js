@@ -43,16 +43,34 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
   };
 
   const checkCodigoCCExists = async (codigo_cc) => {
-    if (!codigo_cc || codigo_cc === imovel.codigo_cc) {
+    // Mantém a lógica para não verificar o código se for vazio ou o mesmo do imóvel atual
+    if (!codigo_cc || (imovel && codigo_cc === imovel.codigo_cc)) {
       setCodigoCCExists(false);
       return;
     }
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`);
+      // Adiciona o objeto de configuração ao fetch
+      const response = await fetch(`${API_BASE_URL}/api/verificarCodigoCC?codigo_cc=${codigo_cc}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Linha da correção:
+          'Authorization': 'Basic my-simple-token'
+        }
+      });
+
+      if (!response.ok) {
+        // Se a resposta não for bem-sucedida, loga o erro e não atualiza o estado
+        console.error("Falha na verificação do código CC:", response.statusText);
+        return;
+      }
+
       const data = await response.json();
       setCodigoCCExists(data.exists);
+
     } catch (error) {
-      console.error("Erro ao verificar o código CC:", error);
+      console.error("Erro de conexão ao verificar o código CC:", error);
     }
   };
 
@@ -86,7 +104,11 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovel.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // A linha da correção está aqui:
+          "Authorization": "Basic my-simple-token"
+        },
         body: JSON.stringify(formattedData),
       });
 
@@ -103,7 +125,6 @@ const EditImovelModal = ({ isOpen, onClose, imovel, onSave }) => {
       setPopup({ message: "Erro de conexão ao tentar atualizar o imóvel.", type: "error" });
     }
   };
-
   if (!isOpen || !formData) return null;
 
   return (

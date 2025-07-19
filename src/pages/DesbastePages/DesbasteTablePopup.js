@@ -33,19 +33,39 @@ const DesbasteTablePopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const fetchDesbastes = useCallback(async () => {
-        if (!imovelId) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes`);
-            setDesbasteData(response.data);
-        } catch (error) {
-            console.error("Erro ao buscar desbastes:", error);
-            setError("Não foi possível carregar os dados de desbaste.");
-        } finally {
-            setLoading(false);
+    if (!imovelId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      // Com axios, os cabeçalhos são passados como segundo argumento
+      const response = await axios.get(
+        `${API_BASE_URL}/api/imoveis/${imovelId}/desbastes`,
+        {
+          headers: {
+            // A linha da correção:
+            'Authorization': 'Basic my-simple-token'
+          }
         }
-    }, [imovelId]);
+      );
+      
+      // O axios já trata o .json() e coloca os dados em 'response.data'
+      // Também verifica se a resposta é um array para segurança
+      setDesbasteData(Array.isArray(response.data) ? response.data : []);
+
+    } catch (error) {
+      console.error("Erro ao buscar desbastes:", error);
+      
+      // Axios coloca a resposta de erro em 'error.response'
+      if (error.response && error.response.status === 404) {
+        // Se for 404 (não encontrado), simplesmente limpa os dados
+        setDesbasteData([]);
+      } else {
+        setError("Não foi possível carregar os dados de desbaste.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [imovelId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -86,18 +106,32 @@ const DesbasteTablePopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const executeDelete = async () => {
-        if (!itemToDeleteId) return;
-        try {
-            await axios.delete(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/${itemToDeleteId}`);
-            setDesbasteData(prevData => prevData.filter(desbaste => desbaste.id !== itemToDeleteId));
-            setSelectedItems(prev => prev.filter(id => id !== itemToDeleteId));
-        } catch (err) {
-            console.error("Erro ao excluir desbaste:", err);
-            setError("Erro ao excluir o registro de desbaste.");
-        } finally {
-            cancelDelete();
+    if (!itemToDeleteId) return;
+    try {
+      // Para axios, passamos a configuração (incluindo headers) como segundo argumento.
+      await axios.delete(
+        `${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/${itemToDeleteId}`,
+        {
+          headers: {
+            // A linha da correção:
+            'Authorization': 'Basic my-simple-token'
+          }
         }
-    };
+      );
+
+      // Atualiza o estado local para refletir a exclusão
+      setDesbasteData(prevData => prevData.filter(desbaste => desbaste.id !== itemToDeleteId));
+      setSelectedItems(prev => prev.filter(id => id !== itemToDeleteId));
+
+    } catch (err) {
+      console.error("Erro ao excluir desbaste:", err);
+      // Tenta extrair uma mensagem mais clara do erro, se disponível
+      const errorMessage = err.response?.data?.error || "Erro ao excluir o registro de desbaste.";
+      setError(errorMessage);
+    } finally {
+      cancelDelete();
+    }
+  };
     
     const generateReport = () => {
         const selectedData = desbasteData.filter(item => selectedItems.includes(item.id));

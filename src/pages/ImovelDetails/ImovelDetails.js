@@ -50,10 +50,25 @@ const ImovelDetails = () => {
     return null;
   };
 
-  const fetchImovelDetails = async () => {
+  
+const fetchImovelDetails = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis/${id}`);
-      if (!response.ok) throw new Error("Imóvel não encontrado");
+      // Adicionamos o objeto de configuração ao fetch
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // A linha da correção:
+          'Authorization': 'Basic my-simple-token'
+        }
+      });
+
+      if (!response.ok) {
+        // Captura a mensagem de erro do backend se houver
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Imóvel não encontrado");
+      }
+
       const data = await response.json();
       setImovel(data);
 
@@ -63,12 +78,12 @@ const ImovelDetails = () => {
       } else {
         setContractExpirationAlert("");
       }
+
     } catch (error) {
-      console.error("Erro ao buscar detalhes do imóvel:", error);
+      console.error("Erro ao buscar detalhes do imóvel:", error.message);
       setImovel(undefined);
     }
   };
-
   useEffect(() => {
     fetchImovelDetails();
     // A dependência 'id' garante que a função será chamada novamente se o ID do imóvel mudar.

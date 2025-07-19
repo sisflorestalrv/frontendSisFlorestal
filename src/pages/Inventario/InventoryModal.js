@@ -70,23 +70,40 @@ const InventoryModal = ({ isOpen, onClose, imovelId }) => {
     ]);
     
     const fetchInventarios = useCallback(async () => {
-        if (!imovelId) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`);
-            if (!response.ok) {
-                throw new Error("Falha ao carregar os inventários. Tente novamente mais tarde.");
-            }
-            const data = await response.json();
-            setInventarios(Array.isArray(data) ? data : []);
-        } catch (err) {
-            setError(err.message);
-            setInventarios([]);
-        } finally {
-            setLoading(false);
+    if (!imovelId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // A linha da correção:
+          'Authorization': 'Basic my-simple-token'
         }
-    }, [imovelId]);
+      });
+
+      // A sua lógica de tratamento de erro já era ótima, então a mantemos.
+      if (!response.ok) {
+        // Se a resposta for 404 (Nenhum inventário), não trata como um erro,
+        // mas garante que a lista fique vazia.
+        if (response.status === 404) {
+          setInventarios([]);
+        } else {
+          throw new Error("Falha ao carregar os inventários. Tente novamente mais tarde.");
+        }
+      } else {
+        const data = await response.json();
+        setInventarios(Array.isArray(data) ? data : []);
+      }
+
+    } catch (err) {
+      setError(err.message);
+      setInventarios([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [imovelId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -105,26 +122,35 @@ const InventoryModal = ({ isOpen, onClose, imovelId }) => {
         setInventoryData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        setError(null);
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(inventoryData),
-            });
-            if (!response.ok) throw new Error("Não foi possível salvar. Verifique os dados.");
-            
-            setInventoryData(initialInventoryState);
-            await fetchInventarios();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    
+const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/inventario`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify(inventoryData),
+        });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({})); // Evita erro se a resposta não for JSON
+            throw new Error(errorData.error || "Não foi possível salvar. Verifique os dados.");
+        }
+        
+        setInventoryData(initialInventoryState);
+        await fetchInventarios(); // Recarrega a lista de inventários
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setIsSaving(false);
+    }
+};
     const handleSelectInventario = (id) => {
         setSelectedInventarios(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]

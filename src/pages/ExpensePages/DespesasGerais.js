@@ -13,11 +13,38 @@ const ExpensesPage = () => {
   const [selectedExpenses, setSelectedExpenses] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/despesas`)
-      .then((response) => response.json())
-      .then((data) => setExpenses(data))
-      .catch((error) => console.error('Erro ao buscar despesas:', error));
-  }, []);
+    const fetchExpenses = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/despesas`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // A linha da correção:
+            'Authorization': 'Basic my-simple-token'
+          }
+        });
+
+        if (!response.ok) {
+          // Se a resposta for 404 (sem despesas), não trata como erro.
+          if (response.status === 404) {
+            setExpenses([]);
+            return;
+          }
+          throw new Error('Falha ao buscar despesas do servidor.');
+        }
+
+        const data = await response.json();
+        // Garante que o estado seja sempre um array.
+        setExpenses(Array.isArray(data) ? data : []);
+
+      } catch (error) {
+        console.error('Erro ao buscar despesas:', error);
+        setExpenses([]); // Limpa as despesas em caso de erro.
+      }
+    };
+
+    fetchExpenses();
+  }, []); // O array vazio [] garante que isso rode apenas uma vez quando o componente montar.
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);

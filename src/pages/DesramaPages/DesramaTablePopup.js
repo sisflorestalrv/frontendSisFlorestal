@@ -21,38 +21,59 @@ const DesramaTablePopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const fetchDesramas = useCallback(async () => {
-        if (!imovelId) return;
+    if (!imovelId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      // Adicionamos o objeto de configuração com os headers no axios.get
+      const response = await axios.get(
+        `${API_BASE_URL}/api/imoveis/${imovelId}/desramas`,
+        {
+          headers: {
+            // A linha da correção:
+            'Authorization': 'Basic my-simple-token'
+          }
+        }
+      );
+
+      // Garante que a resposta seja um array antes de filtrar
+      const data = Array.isArray(response.data) ? response.data : [];
+
+      const registrosCompletos = data.filter(desrama =>
+        desrama.altura !== null &&
+        desrama.data !== null &&
+        desrama.numero !== null
+      );
+      
+      setDesramaData(registrosCompletos);
+
+    } catch (error) {
+      console.error("Erro ao buscar desramas:", error);
+
+      // Trata o caso de 404 (sem desramas) para não mostrar erro
+      if (error.response && error.response.status === 404) {
+        setDesramaData([]);
+      } else {
+        setError("Não foi possível carregar os dados de desrama.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [imovelId]);
+
+  useEffect(() => {
+    if (isOpen) {
+        fetchDesramas();
+    } else {
+        // Reseta o estado quando o popup fecha
+        setDesramaData([]);
         setLoading(true);
         setError(null);
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas`);
-            // Mantendo sua regra de negócio original para filtrar registros nulos
-            const registrosCompletos = response.data.filter(desrama =>
-                desrama.altura !== null &&
-                desrama.data !== null &&
-                desrama.numero !== null
-            );
-            setDesramaData(registrosCompletos);
-        } catch (error) {
-            console.error("Erro ao buscar desramas:", error);
-            setError("Não foi possível carregar os dados de desrama.");
-        } finally {
-            setLoading(false);
-        }
-    }, [imovelId]);
-
-    useEffect(() => {
-        if (isOpen) {
-            fetchDesramas();
-        } else {
-            setDesramaData([]);
-            setLoading(true);
-            setError(null);
-            setShowDeleteConfirmation(false);
-            setItemToDeleteId(null);
-            setSelectedItems([]);
-        }
-    }, [isOpen, fetchDesramas]);
+        setShowDeleteConfirmation(false);
+        setItemToDeleteId(null);
+        setSelectedItems([]);
+    }
+  }, [isOpen, fetchDesramas]); // <-- CORREÇÃO APLICADA AQUI
 
     const handleSelectItem = (id) => {
         setSelectedItems(prev => 
@@ -80,18 +101,31 @@ const DesramaTablePopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const executeDelete = async () => {
-        if (!itemToDeleteId) return;
-        try {
-            await axios.delete(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/${itemToDeleteId}`);
-            setDesramaData(prevData => prevData.filter(desrama => desrama.id !== itemToDeleteId));
-            setSelectedItems(prev => prev.filter(id => id !== itemToDeleteId));
-        } catch (err) {
-            console.error("Erro ao excluir desrama:", err);
-            setError("Erro ao excluir o registro de desrama.");
-        } finally {
-            cancelDelete();
+    if (!itemToDeleteId) return;
+    try {
+      // Adiciona o objeto de configuração com os headers ao axios.delete
+      await axios.delete(
+        `${API_BASE_URL}/api/imoveis/${imovelId}/desramas/${itemToDeleteId}`,
+        {
+          headers: {
+            // A linha da correção:
+            'Authorization': 'Basic my-simple-token'
+          }
         }
-    };
+      );
+      
+      // Atualiza o estado local para remover o item da lista
+      setDesramaData(prevData => prevData.filter(desrama => desrama.id !== itemToDeleteId));
+      setSelectedItems(prev => prev.filter(id => id !== itemToDeleteId));
+
+    } catch (err) {
+      console.error("Erro ao excluir desrama:", err);
+      const errorMessage = err.response?.data?.error || "Erro ao excluir o registro de desrama.";
+      setError(errorMessage);
+    } finally {
+      cancelDelete(); // Fecha o modal de confirmação
+    }
+  };
 
     const generateReport = () => {
         const selectedData = desramaData.filter(item => selectedItems.includes(item.id));

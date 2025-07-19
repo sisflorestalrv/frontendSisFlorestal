@@ -16,20 +16,39 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
     const [notaToDeleteId, setNotaToDeleteId] = useState(null);
 
     const fetchNotas = useCallback(async () => {
-        if (!imovelId) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`);
-            if (!response.ok) throw new Error("Falha ao carregar as notas.");
-            const data = await response.json();
-            setNotas(data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
+    if (!imovelId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // A linha da correção:
+          'Authorization': 'Basic my-simple-token'
         }
-    }, [imovelId]);
+      });
+
+      // Se a resposta for 404, trata como uma lista vazia, não um erro.
+      if (response.status === 404) {
+        setNotas([]);
+        return; 
+      }
+
+      if (!response.ok) {
+        throw new Error("Falha ao carregar as notas.");
+      }
+      
+      const data = await response.json();
+      setNotas(Array.isArray(data) ? data : []);
+
+    } catch (err) {
+      setError(err.message);
+      setNotas([]); // Garante que notas seja um array em caso de erro.
+    } finally {
+      setLoading(false);
+    }
+  }, [imovelId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -62,24 +81,34 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
     };
 
     const handleSaveNota = async () => {
-        const url = editingNotaId
-            ? `${API_BASE_URL}/api/imoveis/${imovelId}/notas/${editingNotaId}`
-            : `${API_BASE_URL}/api/imoveis/${imovelId}/notas`;
-        const method = editingNotaId ? "PUT" : "POST";
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
-            if (!response.ok) throw new Error(`Erro ao salvar a nota.`);
-            handleCancelEdit();
-            await fetchNotas();
-        } catch (err) {
-            setError(err.message);
-        }
-    };
+    const url = editingNotaId
+        ? `${API_BASE_URL}/api/imoveis/${imovelId}/notas/${editingNotaId}`
+        : `${API_BASE_URL}/api/imoveis/${imovelId}/notas`;
+    const method = editingNotaId ? "PUT" : "POST";
 
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Erro ao salvar a nota.`);
+        }
+
+        handleCancelEdit();
+        await fetchNotas();
+
+    } catch (err) {
+        setError(err.message);
+    }
+};
     const confirmDelete = (notaId) => {
         setNotaToDeleteId(notaId);
         setShowDeleteConfirmation(true);
@@ -91,22 +120,35 @@ const NotasModal = ({ isOpen, onClose, imovelId }) => {
     };
     
     const executeDelete = async () => {
-        if (!notaToDeleteId) return;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${notaToDeleteId}`, {
-                method: "DELETE",
-            });
-            if (!response.ok) throw new Error("Erro ao excluir a nota.");
-            if(editingNotaId === notaToDeleteId) {
-                handleCancelEdit();
+    if (!notaToDeleteId) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/notas/${notaToDeleteId}`, {
+            method: "DELETE",
+            headers: {
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
             }
-            await fetchNotas();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            cancelDelete();
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Erro ao excluir a nota.");
         }
-    };
+
+        // Se a nota excluída era a que estava em edição, cancela a edição.
+        if (editingNotaId === notaToDeleteId) {
+            handleCancelEdit();
+        }
+        
+        await fetchNotas(); // Recarrega a lista de notas
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        cancelDelete(); // Fecha o modal de confirmação
+    }
+};
 
     if (!isOpen) return null;
 

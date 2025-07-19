@@ -49,68 +49,69 @@ const CadastroImoveis = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setPopup({ message: '', type: '' });
+  e.preventDefault();
+  setPopup({ message: '', type: '' });
 
-    // 1. Validação de campos obrigatórios
-    const requiredFields = ['descricao', 'codigo_cc', 'numero_car', 'area_imovel', 'area_plantio', 'especie', 'origem', 'num_arvores_plantadas', 'num_arvores_cortadas', 'matricula', 'data_plantio', 'numero_ccir', 'numero_itr', 'proprietario', 'municipio', 'localidade'];
-    if (isArrendado) {
-      requiredFields.push('vencimento_contrato', 'arrendatario', 'data_contrato');
-    }
-    for (const field of requiredFields) {
-      if (!formData[field] || String(formData[field]).trim() === '') {
-        const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        setPopup({ message: `O campo "${fieldName}" é obrigatório.`, type: 'error' });
-        return;
-      }
-    }
-
-    // 2. Validação do Código CC
-    const exists = await checkCodigoCCExists(formData.codigo_cc);
-    if (exists) {
-      setPopup({ message: "O código CC informado já está cadastrado!", type: 'error' });
+  // 1. Validação de campos obrigatórios
+  const requiredFields = ['descricao', 'codigo_cc', 'numero_car', 'area_imovel', 'area_plantio', 'especie', 'origem', 'num_arvores_plantadas', 'num_arvores_cortadas', 'matricula', 'data_plantio', 'numero_ccir', 'numero_itr', 'proprietario', 'municipio', 'localidade'];
+  if (isArrendado) {
+    requiredFields.push('vencimento_contrato', 'arrendatario', 'data_contrato');
+  }
+  for (const field of requiredFields) {
+    if (!formData[field] || String(formData[field]).trim() === '') {
+      const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      setPopup({ message: `O campo "${fieldName}" é obrigatório.`, type: 'error' });
       return;
     }
-    
-    // 3. Preparação e envio dos dados
-    const num_arvores_plantadas = parseFloat(formData.num_arvores_plantadas);
-    const num_arvores_cortadas = parseFloat(formData.num_arvores_cortadas);
-    const area_plantio = parseFloat(formData.area_plantio);
-    const num_arvores_remanescentes = num_arvores_plantadas - num_arvores_cortadas;
-    const num_arvores_por_hectare = area_plantio > 0 ? num_arvores_remanescentes / area_plantio : 0;
+  }
 
-    const formDataToSend = {
-      ...formData,
-      num_arvores_remanescentes,
-      num_arvores_por_hectare,
-      // --- ALTERAÇÃO AQUI ---
-      // Adiciona o campo altura_desrama com valor fixo 0
-      altura_desrama: 0,
-      // --------------------
-      arrendatario: isArrendado ? formData.arrendatario : null,
-      vencimento_contrato: isArrendado ? formData.vencimento_contrato : null,
-      data_contrato: isArrendado ? formData.data_contrato : null,
-    };
+  // 2. Validação do Código CC
+  const exists = await checkCodigoCCExists(formData.codigo_cc);
+  if (exists) {
+    setPopup({ message: "O código CC informado já está cadastrado!", type: 'error' });
+    return;
+  }
+  
+  // 3. Preparação e envio dos dados
+  const num_arvores_plantadas = parseFloat(formData.num_arvores_plantadas);
+  const num_arvores_cortadas = parseFloat(formData.num_arvores_cortadas);
+  const area_plantio = parseFloat(formData.area_plantio);
+  const num_arvores_remanescentes = num_arvores_plantadas - num_arvores_cortadas;
+  const num_arvores_por_hectare = area_plantio > 0 ? num_arvores_remanescentes / area_plantio : 0;
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formDataToSend),
-      });
-
-      if (response.ok) {
-        setPopup({ message: "Imóvel cadastrado com sucesso!", type: 'success' });
-        setFormData(initialState);
-        setIsArrendado(false);
-      } else {
-        const errorData = await response.json();
-        setPopup({ message: errorData.error || "Erro ao cadastrar o imóvel.", type: 'error' });
-      }
-    } catch (error) {
-      setPopup({ message: "Erro de conexão. Não foi possível se comunicar com o servidor.", type: 'error' });
-    }
+  const formDataToSend = {
+    ...formData,
+    num_arvores_remanescentes,
+    num_arvores_por_hectare,
+    altura_desrama: 0,
+    arrendatario: isArrendado ? formData.arrendatario : null,
+    vencimento_contrato: isArrendado ? formData.vencimento_contrato : null,
+    data_contrato: isArrendado ? formData.data_contrato : null,
   };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/imoveis`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // A linha da correção:
+        'Authorization': 'Basic my-simple-token'
+      },
+      body: JSON.stringify(formDataToSend),
+    });
+
+    if (response.ok) {
+      setPopup({ message: "Imóvel cadastrado com sucesso!", type: 'success' });
+      setFormData(initialState);
+      setIsArrendado(false);
+    } else {
+      const errorData = await response.json();
+      setPopup({ message: errorData.error || "Erro ao cadastrar o imóvel.", type: 'error' });
+    }
+  } catch (error) {
+    setPopup({ message: "Erro de conexão. Não foi possível se comunicar com o servidor.", type: 'error' });
+  }
+};
   
   const toggleTipoImovel = (tipo) => {
     setIsArrendado(tipo === 'arrendado');

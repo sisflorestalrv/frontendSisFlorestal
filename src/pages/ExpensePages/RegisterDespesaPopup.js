@@ -64,41 +64,44 @@ const RegisterDespesaPopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
-        // Validação
-        for (const key in formData) {
-            // numero_nota_fiscal é opcional
-            if (key !== 'numero_nota_fiscal' && formData[key] === '') {
-                setError(`O campo "${key.replace(/_/g, ' ')}" é obrigatório.`);
-                return;
-            }
+    // Validação
+    for (const key in formData) {
+        if (key !== 'numero_nota_fiscal' && formData[key] === '') {
+            setError(`O campo "${key.replace(/_/g, ' ')}" é obrigatório.`);
+            return;
         }
+    }
 
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, imovel_id: imovelId }),
-            });
+    setIsLoading(true);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // A linha da correção:
+                'Authorization': 'Basic my-simple-token'
+            },
+            body: JSON.stringify({ ...formData, imovel_id: imovelId }),
+        });
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Erro ao registrar despesa');
-            }
-            
-            setSuccess('Despesa registrada com sucesso!');
-            setFormData(initialState); // Limpa o formulário
-
-        } catch (err) {
-            setError(err.message || 'Falha ao registrar despesa. Tente novamente.');
-        } finally {
-            setIsLoading(false);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || 'Erro ao registrar despesa');
         }
-    };
+        
+        setSuccess('Despesa registrada com sucesso!');
+        setFormData(initialState); // Limpa o formulário
+
+    } catch (err) {
+        setError(err.message || 'Falha ao registrar despesa. Tente novamente.');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     if (!isOpen) return null;
 

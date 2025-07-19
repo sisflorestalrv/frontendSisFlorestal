@@ -58,11 +58,25 @@ const ViewImoveis = () => {
 
   const fetchImoveis = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/imoveis`);
+      const response = await fetch(`${API_BASE_URL}/api/imoveis`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic my-simple-token'
+        }
+      });
+
       const data = await response.json();
-      setImoveis(data);
+
+      if (response.ok && Array.isArray(data)) {
+        setImoveis(data);
+      } else {
+        console.error('Falha ao buscar imóveis ou resposta inválida:', data);
+        setImoveis([]);
+      }
     } catch (error) {
-      console.error('Erro ao buscar imóveis:', error);
+      console.error('Erro de conexão ao buscar imóveis:', error);
+      setImoveis([]);
     }
   };
 
@@ -84,10 +98,20 @@ const ViewImoveis = () => {
   const handleDelete = async () => {
     if (itemToDeleteId) {
       try {
-        await fetch(`${API_BASE_URL}/api/imoveis/${itemToDeleteId}`, { method: 'DELETE' });
-        setImoveis(imoveis.filter((imovel) => imovel.id !== itemToDeleteId));
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${itemToDeleteId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Basic my-simple-token'
+          }
+        });
+        if (response.ok) {
+          setImoveis(imoveis.filter((imovel) => imovel.id !== itemToDeleteId));
+        } else {
+          const errorData = await response.json();
+          console.error('Falha ao excluir o imóvel no backend:', errorData.error);
+        }
       } catch (error) {
-        console.error('Erro ao excluir imóvel:', error);
+        console.error('Erro de conexão ao excluir imóvel:', error);
       } finally {
         setShowDeleteConfirmation(false);
         setItemToDeleteId(null);

@@ -23,20 +23,38 @@ const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const fetchPrevisoes = useCallback(async () => {
-        if (!imovelId) return;
-        setIsLoading(true);
-        setError('');
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsoes`);
-            if (!response.ok) throw new Error("Erro ao carregar previsões pendentes.");
-            const data = await response.json();
-            setPrevisoes(data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
+    if (!imovelId) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsoes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // A linha da correção:
+          'Authorization': 'Basic my-simple-token'
         }
-    }, [imovelId]);
+      });
+      
+      if (!response.ok) {
+        // Se o status for 404 (não encontrado), não é um erro, apenas não há previsões.
+        if (response.status === 404) {
+          setPrevisoes([]);
+        } else {
+          throw new Error("Erro ao carregar previsões pendentes.");
+        }
+      } else {
+        const data = await response.json();
+        // Garante que o estado seja sempre um array.
+        setPrevisoes(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setError(err.message);
+      setPrevisoes([]); // Limpa as previsões em caso de erro.
+    } finally {
+      setIsLoading(false);
+    }
+  }, [imovelId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -58,56 +76,79 @@ const RegisterDesramaPopup = ({ isOpen, onClose, imovelId }) => {
     const handleFulfillmentChange = (e) => setFulfillmentData({ ...fulfillmentData, [e.target.name]: e.target.value });
 
     const handlePrevisaoSubmit = async (e) => {
-        e.preventDefault();
-        if (!previsaoData.previsao) {
-            setError("O campo 'previsão' é obrigatório!");
-            return;
-        }
-        setIsSubmitting(true);
-        setError(''); setSuccess('');
-        try {
-            await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsao`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(previsaoData),
-            });
-            setSuccess("Previsão registrada com sucesso!");
-            setPrevisaoData(initialPrevisaoState);
-            fetchPrevisoes();
-        } catch (err) {
-            setError("Erro ao registrar a previsão.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    e.preventDefault();
+    if (!previsaoData.previsao) {
+        setError("O campo 'previsão' é obrigatório!");
+        return;
+    }
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desramas/previsao`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify(previsaoData),
+        });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Erro ao registrar a previsão.");
+        }
+
+        setSuccess("Previsão registrada com sucesso!");
+        setPrevisaoData(initialPrevisaoState);
+        fetchPrevisoes(); // Recarrega a lista de previsões
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
     const handleFulfillmentSubmit = async (e) => {
-        e.preventDefault();
-        const { altura, numero, data } = fulfillmentData;
-        if (!altura || !numero || !data) {
-            setError("Todos os campos (altura, número e data) são obrigatórios!");
-            return;
-        }
-        
-        setIsSubmitting(true);
-        setError(''); setSuccess('');
-        try {
-            const formattedData = { ...fulfillmentData, altura: altura.replace(",", ".") };
-            await fetch(`${API_BASE_URL}/api/desramas/${selectedPrevisao.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formattedData),
-            });
-            setSuccess("Desrama registrada com sucesso na previsão!");
-            setSelectedPrevisao(null); // Volta para a tela principal
-            fetchPrevisoes();
-        } catch (err) {
-            setError("Falha ao registrar a desrama.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    e.preventDefault();
+    const { altura, numero, data } = fulfillmentData;
+    if (!altura || !numero || !data) {
+        setError("Todos os campos (altura, número e data) são obrigatórios!");
+        return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+        const formattedData = { ...fulfillmentData, altura: altura.replace(",", ".") };
+        const response = await fetch(`${API_BASE_URL}/api/desramas/${selectedPrevisao.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify(formattedData),
+        });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Falha ao registrar a desrama.");
+        }
+
+        setSuccess("Desrama registrada com sucesso na previsão!");
+        setSelectedPrevisao(null); // Volta para a tela principal
+        fetchPrevisoes(); // Recarrega a lista de previsões pendentes
+        // Considere também recarregar a lista de desramas completas se necessário
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
     if (!isOpen) return null;
 
     const renderMainView = () => (

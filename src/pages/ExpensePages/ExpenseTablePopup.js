@@ -101,19 +101,31 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     setLoading(true);
     setError(null);
     try {
-      const [despesasRes, imovelRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`),
-        axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}`),
-      ]);
-      setDespesas(despesasRes.data);
-      setImovel(imovelRes.data);
+        // Objeto de configuração com os cabeçalhos a ser reutilizado
+        const axiosConfig = {
+            headers: {
+                'Authorization': 'Basic my-simple-token'
+            }
+        };
+
+        const [despesasRes, imovelRes] = await Promise.all([
+            // Adiciona a configuração a ambas as chamadas
+            axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}/despesas`, axiosConfig),
+            axios.get(`${API_BASE_URL}/api/imoveis/${imovelId}`, axiosConfig),
+        ]);
+
+        // Garante que a resposta de despesas é um array
+        setDespesas(Array.isArray(despesasRes.data) ? despesasRes.data : []);
+        setImovel(imovelRes.data);
+
     } catch (err) {
-      console.error("Erro ao buscar dados:", err);
-      setError("Não foi possível carregar os dados das despesas.");
+        console.error("Erro ao buscar dados:", err);
+        const errorMessage = err.response?.data?.error || "Não foi possível carregar os dados das despesas.";
+        setError(errorMessage);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [imovelId]);
+}, [imovelId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -147,15 +159,26 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   const executeDelete = async () => {
     if (!itemToDeleteId) return;
     try {
-      await axios.delete(`${API_BASE_URL}/api/despesas/${itemToDeleteId}`);
-      setDespesas((prev) => prev.filter((d) => d.id !== itemToDeleteId));
-      setSelectedForOrder((prev) => prev.filter((id) => id !== itemToDeleteId));
+        // Adiciona o objeto de configuração com os headers ao axios.delete
+        await axios.delete(`${API_BASE_URL}/api/despesas/${itemToDeleteId}`, {
+            headers: {
+                // A linha da correção:
+                'Authorization': 'Basic my-simple-token'
+            }
+        });
+
+        // Atualiza os estados locais para remover o item da lista
+        setDespesas((prev) => prev.filter((d) => d.id !== itemToDeleteId));
+        setSelectedForOrder((prev) => prev.filter((id) => id !== itemToDeleteId));
+
     } catch (err) {
-      setError("Erro ao excluir despesa.");
+        console.error("Erro ao excluir despesa:", err);
+        const errorMessage = err.response?.data?.error || "Erro ao excluir a despesa.";
+        setError(errorMessage);
     } finally {
-      cancelDelete();
+        cancelDelete();
     }
-  };
+};
 
   const handleOpenEditModal = (despesa) => {
     setExpenseToEdit(despesa);
@@ -169,21 +192,32 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
 
   const handleUpdateExpense = async (updatedExpenseData) => {
     try {
-      const { data: updatedExpense } = await axios.put(
-        `${API_BASE_URL}/api/despesas/${updatedExpenseData.id}`,
-        updatedExpenseData
-      );
-      setDespesas((prevDespesas) =>
-        prevDespesas.map((d) =>
-          d.id === updatedExpense.id ? updatedExpense : d
-        )
-      );
-      handleCloseEditModal();
+        // Para axios.put, o corpo dos dados é o segundo argumento
+        // e a configuração (com headers) é o terceiro.
+        const { data: updatedExpense } = await axios.put(
+            `${API_BASE_URL}/api/despesas/${updatedExpenseData.id}`,
+            updatedExpenseData, // 2. Corpo da requisição
+            { // 3. Configuração
+                headers: {
+                    // A linha da correção:
+                    'Authorization': 'Basic my-simple-token'
+                }
+            }
+        );
+
+        setDespesas((prevDespesas) =>
+            prevDespesas.map((d) =>
+                d.id === updatedExpense.id ? updatedExpense : d
+            )
+        );
+        handleCloseEditModal();
+
     } catch (err) {
-      console.error("Erro ao atualizar despesa:", err);
-      setError("Não foi possível atualizar a despesa. Tente novamente.");
+        console.error("Erro ao atualizar despesa:", err);
+        const errorMessage = err.response?.data?.error || "Não foi possível atualizar a despesa. Tente novamente.";
+        setError(errorMessage);
     }
-  };
+};
 
   const handleSelectForOrder = (id) => {
     setSelectedForOrder((prev) =>

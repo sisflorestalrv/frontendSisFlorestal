@@ -26,20 +26,38 @@ const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
     };
 
     const fetchPrevisoes = useCallback(async () => {
-        if (!imovelId) return;
-        setIsLoading(true);
-        setError('');
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsoes`);
-            if (!response.ok) throw new Error("Erro ao carregar previsões pendentes.");
-            const data = await response.json();
-            setPrevisoes(data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
+    if (!imovelId) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsoes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // A linha da correção:
+          'Authorization': 'Basic my-simple-token'
         }
-    }, [imovelId]);
+      });
+
+      if (!response.ok) {
+        // Se o status for 404 (não encontrado), não é um erro, apenas não há previsões.
+        if (response.status === 404) {
+            setPrevisoes([]);
+        } else {
+            throw new Error("Erro ao carregar previsões pendentes.");
+        }
+      } else {
+        const data = await response.json();
+        // Garante que o estado seja sempre um array.
+        setPrevisoes(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setError(err.message);
+      setPrevisoes([]); // Limpa as previsões em caso de erro.
+    } finally {
+      setIsLoading(false);
+    }
+  }, [imovelId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -69,55 +87,79 @@ const RegisterDesbastePopup = ({ isOpen, onClose, imovelId }) => {
 
     const handleFulfillmentChange = (e) => setFulfillmentData({ ...fulfillmentData, [e.target.name]: e.target.value });
 
-    const handlePrevisaoSubmit = async (e) => {
-        e.preventDefault();
-        if (!previsaoDate) {
-            setError("O campo 'previsão' é obrigatório!");
-            return;
-        }
-        setIsSubmitting(true);
-        setError(''); setSuccess('');
-        try {
-            await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsao`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ previsao: previsaoDate }),
-            });
-            setSuccess("Previsão de desbaste registrada com sucesso!");
-            setPrevisaoDate('');
-            fetchPrevisoes();
-        } catch (err) {
-            setError("Erro ao registrar a previsão.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    
+const handlePrevisaoSubmit = async (e) => {
+    e.preventDefault();
+    if (!previsaoDate) {
+        setError("O campo 'previsão' é obrigatório!");
+        return;
+    }
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/imoveis/${imovelId}/desbastes/previsao`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify({ previsao: previsaoDate }),
+        });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Erro ao registrar a previsão.");
+        }
+
+        setSuccess("Previsão de desbaste registrada com sucesso!");
+        setPrevisaoDate('');
+        fetchPrevisoes(); // Recarrega a lista de previsões
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
     const handleFulfillmentSubmit = async (e) => {
-        e.preventDefault();
-        if (!fulfillmentData.numero || !fulfillmentData.data || !fulfillmentData.arvores_cortadas) {
-            setError("Os campos Número, Data e Árvores Cortadas são obrigatórios!");
-            return;
-        }
-        
-        setIsSubmitting(true);
-        setError(''); setSuccess('');
-        try {
-            await fetch(`${API_BASE_URL}/api/desbastes/${selectedPrevisao.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(fulfillmentData),
-            });
-            setSuccess("Desbaste registrado com sucesso na previsão!");
-            setSelectedPrevisao(null);
-            fetchPrevisoes();
-        } catch (err) {
-            setError("Falha ao registrar o desbaste.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    e.preventDefault();
+    if (!fulfillmentData.numero || !fulfillmentData.data || !fulfillmentData.arvores_cortadas) {
+        setError("Os campos Número, Data e Árvores Cortadas são obrigatórios!");
+        return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/desbastes/${selectedPrevisao.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                // A linha da correção:
+                "Authorization": "Basic my-simple-token"
+            },
+            body: JSON.stringify(fulfillmentData),
+        });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Falha ao registrar o desbaste.");
+        }
+
+        setSuccess("Desbaste registrado com sucesso na previsão!");
+        setSelectedPrevisao(null);
+        fetchPrevisoes(); // Recarrega a lista de previsões pendentes
+        // Você também pode querer recarregar a lista de desbastes completos aqui
+        
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
     if (!isOpen) return null;
 
     const renderMainView = () => (
