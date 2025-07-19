@@ -364,7 +364,8 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   // =========================================================================================================
   // ALTERADO: FUNÇÃO DE GERAR RELATÓRIO PDF com tabela e gráfico comparativo único.
   // =========================================================================================================
-  const gerarRelatorioPDF = async () => {
+  
+const gerarRelatorioPDF = async () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
       alert("Você deve selecionar um intervalo de datas.");
       return;
@@ -377,9 +378,11 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     
     const headerColor = [39, 174, 96]; 
     const textColor = [45, 45, 45];
+    const lightGrayColor = [240, 240, 240];
     const chartColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#00d2d3', '#3498db', '#9b59b6'];
 
     const addChartToPdf = async (chartId, chartConfig, x, y, width, height) => {
+      // (Esta função auxiliar não foi alterada)
       const container = chartContainerRef.current;
       if (!container) return;
       const canvas = document.createElement('canvas');
@@ -409,6 +412,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     };
     
     const drawSectionHeader = (text, y) => {
+      // (Esta função auxiliar não foi alterada)
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
       pdf.setTextColor(255, 255, 255);
@@ -417,6 +421,9 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
       pdf.text(text, marginLeft + 3, y);
     };
 
+    // ==========================================================
+    // INÍCIO DA GERAÇÃO DO PDF
+    // ==========================================================
     pdf.addImage(logo, "PNG", marginLeft, 8, 35, 14);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(18);
@@ -432,11 +439,16 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     
     let currentY = 35;
 
-    const filteredDespesas = despesas.filter((d) => new Date(d.data) >= new Date(reportOptions.startDate) && new Date(d.data) <= new Date(reportOptions.endDate));
+    const filteredDespesas = despesas.filter((d) => {
+      const expenseDate = new Date(d.data);
+      if (isNaN(expenseDate.getTime())) return false; 
+      return expenseDate >= new Date(reportOptions.startDate) && expenseDate <= new Date(reportOptions.endDate);
+    });
     
+    // Lançamentos Gerais
     drawSectionHeader("Lançamentos Gerais no Período", currentY);
     currentY += 12;
-
+    // ... (código da tabela de lançamentos gerais permanece o mesmo)
     const tableColumns = [];
     if (reportOptions.columns.tipoDeDespesa) tableColumns.push("Tipo");
     if (reportOptions.columns.fornecedor) tableColumns.push("Fornecedor");
@@ -471,7 +483,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
 
     currentY = pdf.lastAutoTable.finalY + 10;
     
-    const totalGeral = filteredDespesas.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
+    const totalGeralPeriodo = filteredDespesas.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
     pdf.setFillColor(...headerColor);
@@ -479,13 +491,64 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     pdf.roundedRect(marginLeft, currentY, contentWidth, 10, 2, 2, 'FD');
     pdf.setTextColor(255, 255, 255);
     pdf.text("TOTAL GERAL NO PERÍODO:", marginLeft + 5, currentY + 6.5);
-    pdf.text(formatCurrency(totalGeral), marginLeft + contentWidth - 5, currentY + 6.5, { align: 'right' });
+    pdf.text(formatCurrency(totalGeralPeriodo), marginLeft + contentWidth - 5, currentY + 6.5, { align: 'right' });
     currentY += 17;
 
     pdf.setTextColor(...textColor);
-    
+
     // ==========================================================
-    // NOVA SEÇÃO: Análise Comparativa por Tipo de Despesa
+    // SEÇÃO: Resumo Financeiro do Período (EM BLOCOS SEM ÍCONES)
+    // ==========================================================
+    const blockHeight = 22; // Altura do bloco pode ser reduzida
+    const blockGap = 8;
+    // Verifica espaço para a nova seção (2 linhas de blocos)
+    if (currentY + (blockHeight * 2) + blockGap > pageHeight - 15) { 
+        pdf.addPage();
+        currentY = 20;
+    }
+
+    drawSectionHeader("Resumo Financeiro do Período", currentY);
+    currentY += 12;
+
+    const custoPorArvorePeriodo = imovel?.num_arvores_remanescentes ? totalGeralPeriodo / imovel.num_arvores_remanescentes : 0;
+    const despesaPorHaPeriodo = imovel?.area_plantio ? totalGeralPeriodo / imovel.area_plantio : 0;
+    const custoPorMudaPeriodo = imovel?.num_arvores_plantadas ? totalGeralPeriodo / imovel.num_arvores_plantadas : 0;
+    
+    // Função para desenhar cada bloco (sem ícone)
+    const drawSummaryBlock = (x, y, width, height, label, value) => {
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setFillColor(...lightGrayColor);
+        pdf.roundedRect(x, y, width, height, 3, 3, 'FD');
+        
+        // Posiciona o rótulo no topo
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(label, x + 8, y + 8);
+        
+        // Posiciona o valor na parte inferior direita, com destaque
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(15);
+        pdf.setTextColor(...textColor);
+        pdf.text(value, x + width - 8, y + height - 6, { align: 'right' });
+    };
+
+    const blockWidth = (contentWidth / 2) - (blockGap / 2);
+    const row1Y = currentY;
+    const row2Y = row1Y + blockHeight + blockGap;
+
+    // Linha 1 de Blocos
+    drawSummaryBlock(marginLeft, row1Y, blockWidth, blockHeight, 'Custo Total no Período', formatCurrency(totalGeralPeriodo));
+    drawSummaryBlock(marginLeft + blockWidth + blockGap, row1Y, blockWidth, blockHeight, 'Custo / Árvore Remanescente', formatCurrency(custoPorArvorePeriodo));
+    
+    // Linha 2 de Blocos
+    drawSummaryBlock(marginLeft, row2Y, blockWidth, blockHeight, 'Despesa / Hectare', formatCurrency(despesaPorHaPeriodo));
+    drawSummaryBlock(marginLeft + blockWidth + blockGap, row2Y, blockWidth, blockHeight, 'Custo / Muda Plantada', formatCurrency(custoPorMudaPeriodo));
+
+    currentY = row2Y + blockHeight + 15; // Atualiza a posição Y para depois dos blocos
+
+    // ==========================================================
+    // SEÇÃO EXISTENTE: Análise Comparativa (continua igual)
     // ==========================================================
     const totalsByTypeForPDF = filteredDespesas.reduce((acc, despesa) => {
         const type = despesa.tipo_de_despesa || 'Não categorizado';
@@ -494,70 +557,70 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
         return acc;
     }, {});
     
-    if (currentY + 60 > pageHeight - 15) { // Check space for new section
-        pdf.addPage();
-        currentY = 20;
+    if (Object.keys(totalsByTypeForPDF).length > 0) {
+      if (currentY + 80 > pageHeight - 15) { 
+          pdf.addPage();
+          currentY = 20;
+      }
+
+      drawSectionHeader("Análise Comparativa por Tipo de Despesa", currentY);
+      currentY += 12;
+
+      const summaryTableX = marginLeft;
+      const summaryTableWidth = contentWidth * 0.4;
+      const chartX = summaryTableX + summaryTableWidth + 10;
+      const chartWidth = contentWidth - summaryTableWidth - 10;
+      const sectionStartY = currentY;
+
+      const summaryTableBody = Object.entries(totalsByTypeForPDF).map(([type, total]) => [type, formatCurrency(total)]);
+      pdf.autoTable({
+          startY: sectionStartY,
+          head: [['Tipo de Despesa', 'Valor Total']],
+          body: summaryTableBody,
+          theme: 'striped',
+          headStyles: { fillColor: headerColor, fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
+          margin: { left: summaryTableX },
+          tableWidth: summaryTableWidth,
+          columnStyles: { 1: { halign: 'right' } },
+      });
+      
+      const chartHeight = Math.max(70, summaryTableBody.length * 9); 
+      const comparativeChartConfigPDF = {
+          type: 'bar',
+          data: {
+              labels: Object.keys(totalsByTypeForPDF),
+              datasets: [{
+                  data: Object.values(totalsByTypeForPDF),
+                  backgroundColor: chartColors,
+                  borderColor: headerColor,
+                  borderWidth: 1,
+              }]
+          },
+          options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } },
+                  datalabels: {
+                      display: true, anchor: 'end', align: 'right',
+                      formatter: (value) => formatCurrency(value),
+                      color: textColor, font: { size: 9, weight: 'bold' }
+                  }
+              },
+              scales: {
+                  x: { ticks: { callback: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v) } },
+                  y: { ticks: { font: { size: 8 } } }
+              }
+          }
+      };
+      await addChartToPdf('comparative-chart-pdf', comparativeChartConfigPDF, chartX, sectionStartY, chartWidth, chartHeight);
     }
-
-    drawSectionHeader("Análise Comparativa por Tipo de Despesa", currentY);
-    currentY += 12;
-
-    const summaryTableX = marginLeft;
-    const summaryTableWidth = contentWidth * 0.4;
-    const chartX = summaryTableX + summaryTableWidth + 10;
-    const chartWidth = contentWidth - summaryTableWidth - 10;
-    const sectionStartY = currentY;
-
-    // Tabela de totais por tipo
-    const summaryTableBody = Object.entries(totalsByTypeForPDF).map(([type, total]) => [type, formatCurrency(total)]);
-    pdf.autoTable({
-        startY: sectionStartY,
-        head: [['Tipo de Despesa', 'Valor Total']],
-        body: summaryTableBody,
-        theme: 'striped',
-        headStyles: { fillColor: headerColor, fontSize: 9 },
-        styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
-        margin: { left: summaryTableX },
-        tableWidth: summaryTableWidth,
-        columnStyles: { 1: { halign: 'right' } },
-    });
-    const tableFinalY = pdf.lastAutoTable.finalY;
-
-    // Gráfico comparativo
-    const chartHeight = Math.max(70, summaryTableBody.length * 9); // Altura dinâmica
-    const comparativeChartConfigPDF = {
-        type: 'bar',
-        data: {
-            labels: Object.keys(totalsByTypeForPDF),
-            datasets: [{
-                data: Object.values(totalsByTypeForPDF),
-                backgroundColor: chartColors,
-                borderColor: headerColor,
-                borderWidth: 1,
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } },
-                datalabels: {
-                    display: true, anchor: 'end', align: 'right',
-                    formatter: (value) => formatCurrency(value),
-                    color: textColor, font: { size: 9, weight: 'bold' }
-                }
-            },
-            scales: {
-                x: { ticks: { callback: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(v) } },
-                y: { ticks: { font: { size: 8 } } }
-            }
-        }
-    };
-    await addChartToPdf('comparative-chart-pdf', comparativeChartConfigPDF, chartX, sectionStartY, chartWidth, chartHeight);
     
-    pdf.save("relatorio-de-despesas-final.pdf");
+    pdf.save(`relatorio-despesas-${imovel?.descricao?.replace(/\s+/g, '-') || 'imovel'}.pdf`);
   };
-
 
   if (!isOpen) return null;
 
