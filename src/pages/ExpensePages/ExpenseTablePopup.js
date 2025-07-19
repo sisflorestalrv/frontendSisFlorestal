@@ -221,9 +221,6 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     ? totalCusto / imovel.num_arvores_plantadas
     : 0;
   
-  // ==========================================================
-  // ALTERADO: Lógica para consolidar dados para o novo gráfico e tabela
-  // ==========================================================
   const totalsByType = useMemo(() => {
     return Object.entries(expensesByType).reduce((acc, [type, despesasDoTipo]) => {
       const total = despesasDoTipo.reduce((sum, d) => sum + (parseFloat(d.total) || 0), 0);
@@ -269,7 +266,6 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
   }), [totalsByType, formatCurrency]);
 
   const gerarOrdemPDF = () => {
-    // A lógica desta função permanece a mesma, não foi alterada.
     if (selectedForOrder.length === 0) {
       alert("Por favor, selecione ao menos uma despesa para gerar a ordem!");
       return;
@@ -360,11 +356,7 @@ const ExpenseTablePopup = ({ isOpen, imovelId, onClose }) => {
     pdf.roundedRect(margin - 7, startY - 7, contentWidth + 14, rectHeight, 4, 4);
     pdf.save(`ordem-de-pagamento-${numeroOrdem}.pdf`);
   };
-
-  // =========================================================================================================
-  // ALTERADO: FUNÇÃO DE GERAR RELATÓRIO PDF com tabela e gráfico comparativo único.
-  // =========================================================================================================
-  
+ 
 const gerarRelatorioPDF = async () => {
     if (!reportOptions.startDate || !reportOptions.endDate) {
       alert("Você deve selecionar um intervalo de datas.");
@@ -382,7 +374,6 @@ const gerarRelatorioPDF = async () => {
     const chartColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#00d2d3', '#3498db', '#9b59b6'];
 
     const addChartToPdf = async (chartId, chartConfig, x, y, width, height) => {
-      // (Esta função auxiliar não foi alterada)
       const container = chartContainerRef.current;
       if (!container) return;
       const canvas = document.createElement('canvas');
@@ -412,7 +403,6 @@ const gerarRelatorioPDF = async () => {
     };
     
     const drawSectionHeader = (text, y) => {
-      // (Esta função auxiliar não foi alterada)
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
       pdf.setTextColor(255, 255, 255);
@@ -421,9 +411,6 @@ const gerarRelatorioPDF = async () => {
       pdf.text(text, marginLeft + 3, y);
     };
 
-    // ==========================================================
-    // INÍCIO DA GERAÇÃO DO PDF
-    // ==========================================================
     pdf.addImage(logo, "PNG", marginLeft, 8, 35, 14);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(18);
@@ -445,10 +432,8 @@ const gerarRelatorioPDF = async () => {
       return expenseDate >= new Date(reportOptions.startDate) && expenseDate <= new Date(reportOptions.endDate);
     });
     
-    // Lançamentos Gerais
     drawSectionHeader("Lançamentos Gerais no Período", currentY);
     currentY += 12;
-    // ... (código da tabela de lançamentos gerais permanece o mesmo)
     const tableColumns = [];
     if (reportOptions.columns.tipoDeDespesa) tableColumns.push("Tipo");
     if (reportOptions.columns.fornecedor) tableColumns.push("Fornecedor");
@@ -496,12 +481,8 @@ const gerarRelatorioPDF = async () => {
 
     pdf.setTextColor(...textColor);
 
-    // ==========================================================
-    // SEÇÃO: Resumo Financeiro do Período (EM BLOCOS SEM ÍCONES)
-    // ==========================================================
-    const blockHeight = 22; // Altura do bloco pode ser reduzida
+    const blockHeight = 22;
     const blockGap = 8;
-    // Verifica espaço para a nova seção (2 linhas de blocos)
     if (currentY + (blockHeight * 2) + blockGap > pageHeight - 15) { 
         pdf.addPage();
         currentY = 20;
@@ -514,19 +495,16 @@ const gerarRelatorioPDF = async () => {
     const despesaPorHaPeriodo = imovel?.area_plantio ? totalGeralPeriodo / imovel.area_plantio : 0;
     const custoPorMudaPeriodo = imovel?.num_arvores_plantadas ? totalGeralPeriodo / imovel.num_arvores_plantadas : 0;
     
-    // Função para desenhar cada bloco (sem ícone)
     const drawSummaryBlock = (x, y, width, height, label, value) => {
         pdf.setDrawColor(220, 220, 220);
         pdf.setFillColor(...lightGrayColor);
         pdf.roundedRect(x, y, width, height, 3, 3, 'FD');
         
-        // Posiciona o rótulo no topo
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.text(label, x + 8, y + 8);
         
-        // Posiciona o valor na parte inferior direita, com destaque
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(15);
         pdf.setTextColor(...textColor);
@@ -537,19 +515,17 @@ const gerarRelatorioPDF = async () => {
     const row1Y = currentY;
     const row2Y = row1Y + blockHeight + blockGap;
 
-    // Linha 1 de Blocos
     drawSummaryBlock(marginLeft, row1Y, blockWidth, blockHeight, 'Custo Total no Período', formatCurrency(totalGeralPeriodo));
     drawSummaryBlock(marginLeft + blockWidth + blockGap, row1Y, blockWidth, blockHeight, 'Custo / Árvore Remanescente', formatCurrency(custoPorArvorePeriodo));
     
-    // Linha 2 de Blocos
     drawSummaryBlock(marginLeft, row2Y, blockWidth, blockHeight, 'Despesa / Hectare', formatCurrency(despesaPorHaPeriodo));
     drawSummaryBlock(marginLeft + blockWidth + blockGap, row2Y, blockWidth, blockHeight, 'Custo / Muda Plantada', formatCurrency(custoPorMudaPeriodo));
 
-    currentY = row2Y + blockHeight + 15; // Atualiza a posição Y para depois dos blocos
+    currentY = row2Y + blockHeight + 15;
 
-    // ==========================================================
-    // SEÇÃO EXISTENTE: Análise Comparativa (continua igual)
-    // ==========================================================
+    // =========================================================================
+    // ALTERADO: Lógica da tabela de análise comparativa para incluir percentual
+    // =========================================================================
     const totalsByTypeForPDF = filteredDespesas.reduce((acc, despesa) => {
         const type = despesa.tipo_de_despesa || 'Não categorizado';
         if (!acc[type]) acc[type] = 0;
@@ -572,17 +548,24 @@ const gerarRelatorioPDF = async () => {
       const chartWidth = contentWidth - summaryTableWidth - 10;
       const sectionStartY = currentY;
 
-      const summaryTableBody = Object.entries(totalsByTypeForPDF).map(([type, total]) => [type, formatCurrency(total)]);
+      // Corpo da tabela agora inclui o cálculo do percentual
+      const summaryTableBody = Object.entries(totalsByTypeForPDF).map(([type, total]) => {
+          const percentage = totalGeralPeriodo > 0 ? (total / totalGeralPeriodo) * 100 : 0;
+          const formattedPercentage = `${percentage.toFixed(2).replace('.', ',')} %`;
+          return [type, formatCurrency(total), formattedPercentage];
+      });
+
       pdf.autoTable({
           startY: sectionStartY,
-          head: [['Tipo de Despesa', 'Valor Total']],
+          head: [['Tipo de Despesa', 'Valor Total', 'Percentual (%)']], // Cabeçalho atualizado
           body: summaryTableBody,
           theme: 'striped',
           headStyles: { fillColor: headerColor, fontSize: 9 },
           styles: { fontSize: 8, cellPadding: 1.5, textColor: textColor },
           margin: { left: summaryTableX },
           tableWidth: summaryTableWidth,
-          columnStyles: { 1: { halign: 'right' } },
+          // Alinhamento atualizado para a coluna de total e percentual
+          columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } }, 
       });
       
       const chartHeight = Math.max(70, summaryTableBody.length * 9); 
@@ -845,9 +828,9 @@ const gerarRelatorioPDF = async () => {
 
               <div className="expense-divider"></div>
               
-              {/* ========================================================== */}
-              {/* ALTERADO: Seção unificada com tabela e gráfico comparativo */}
-              {/* ========================================================== */}
+              {/* ========================================================================= */}
+              {/* ALTERADO: Seção unificada com tabela e gráfico comparativo com percentual */}
+              {/* ========================================================================= */}
               <section className="expense-section">
                 <h3 className="expense-section-title">Análise Comparativa por Tipo de Despesa</h3>
                 <div className="expense-table-responsive" style={{ marginBottom: '2rem' }}>
@@ -856,6 +839,7 @@ const gerarRelatorioPDF = async () => {
                             <tr>
                                 <th>Tipo de Despesa</th>
                                 <th className="text-right">Total</th>
+                                <th className="text-right">Percentual (%)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -863,6 +847,13 @@ const gerarRelatorioPDF = async () => {
                                 <tr key={type}>
                                     <td>{type}</td>
                                     <td className="text-right">{formatCurrency(total)}</td>
+                                    <td className="text-right">
+                                        {/* Cálculo do percentual em relação ao custo total de todas as despesas */}
+                                        {totalCusto > 0 
+                                            ? `${((total / totalCusto) * 100).toFixed(2).replace('.', ',')} %` 
+                                            : '0,00 %'
+                                        }
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
